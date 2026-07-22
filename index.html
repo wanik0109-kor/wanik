@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#17131f" />
-  <title>다이스바운드 원정대</title>
+  <title>길드 마스터 시뮬레이터</title>
   <style>
     :root {
       --bg: #120f18;
@@ -243,6 +243,18 @@
       background: var(--injury);
     }
 
+    .status-badge.trauma {
+      color: #fff;
+      background: #68428a;
+    }
+
+    .status-stack {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+
     .char-name {
       margin: 15px 0 2px;
       font-weight: 900;
@@ -467,6 +479,7 @@
 
     .survival-row b.dead-text { color: var(--danger); }
     .survival-row b.injury-text { color: var(--injury); }
+    .survival-row b.trauma-text { color: #bd8ae8; }
     .survival-row b.safe-text { color: var(--accent-2); }
 
     .primary-wide {
@@ -711,8 +724,8 @@
   <main class="shell">
     <header class="topbar">
       <div class="brand">
-        <h1>🎲 다이스바운드 원정대</h1>
-        <p>무료 가챠로 모험가를 모으고, 네 개의 주사위로 던전을 돌파하세요.</p>
+        <h1>🏰 길드 마스터 시뮬레이터</h1>
+        <p>길드 마스터가 되어 모험가를 모집하고 파티를 편성해 던전으로 보내세요.</p>
       </div>
       <div class="resources">
         <div class="resource"><span>보유 골드</span><strong id="gold">0 G</strong></div>
@@ -726,7 +739,7 @@
         <section class="panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">모험가 가챠</h2>
+              <h2 class="panel-title">모험가 모집</h2>
               <p class="panel-subtitle">소환 1회당 10골드가 소모됩니다.</p>
             </div>
             <div class="actions">
@@ -809,7 +822,7 @@
               <h2 class="panel-title">게임 기록</h2>
               <p class="panel-subtitle">최근 사건부터 표시됩니다.</p>
             </div>
-            <button id="resetBtn" class="danger">저장 초기화</button>
+            <button id="resetBtn" class="danger">전체 데이터 초기화</button>
           </div>
           <div id="gameLog" class="log"></div>
         </section>
@@ -823,10 +836,10 @@
           <div class="rules">
             <div class="rule"><strong>가챠</strong>새 게임은 300G로 시작하며 모험가 1명 소환에 10G가 듭니다.</div>
             <div class="rule"><strong>인카운터</strong>파티원의 주사위 합계가 ‘이상’ 또는 ‘이하’ 조건을 만족하면 성공합니다.</div>
-            <div class="rule"><strong>실패 생존 판정</strong>1은 사망, 2는 부상, 3~6은 무사 생존입니다.</div>
-            <div class="rule"><strong>부상</strong>중첩되지 않으며 이후 주사위에 무작위 +1 또는 -1이 적용됩니다.</div>
+            <div class="rule"><strong>실패 생존 판정</strong>1은 사망, 2는 영구 트라우마, 3은 부상, 4~6은 무사 생존입니다.</div>
+            <div class="rule"><strong>디버프</strong>트라우마는 매 인카운터 50% 확률로 주사위를 못 굴리며 영구 지속됩니다. 부상은 주사위에 ±2를 적용하고 던전 종료 시 회복됩니다.</div>
             <div class="rule"><strong>원정 도구</strong>밧줄은 전체 재굴림, 붕대는 부상 치료, 락픽은 완료 보상 +50%입니다.</div>
-            <div class="rule"><strong>던전 종료</strong>부상자 수에 따라 보상을 줄인 뒤 모든 생존자의 부상이 회복됩니다.</div>
+            <div class="rule"><strong>던전 종료</strong>생환한 모험가는 성공 횟수 +1을 얻습니다. 부상은 회복되지만 트라우마는 유지됩니다.</div>
           </div>
         </section>
       </div>
@@ -838,7 +851,7 @@
       "use strict";
 
       const STORAGE_KEY = "dicebound-expedition-v1";
-      const ECONOMY_VERSION = 2;
+      const SAVE_VERSION = 3;
       const GACHA_COST = 10;
 
       const ITEM_DEFS = {
@@ -909,7 +922,7 @@
 
       function defaultState() {
         return {
-          economyVersion: ECONOMY_VERSION,
+          saveVersion: SAVE_VERSION,
           gold: 300,
           inventory: { rope: 0, bandage: 0, lockpick: 0 },
           selectedItem: null,
@@ -939,16 +952,17 @@
             log: Array.isArray(parsed.log) ? parsed.log : []
           };
 
-          // 구버전 저장 데이터에는 시작 자금 300G를 한 번만 지급합니다.
-          if (parsed.economyVersion !== ECONOMY_VERSION) {
-            merged.gold = (Number(parsed.gold) || 0) + 300;
-            merged.economyVersion = ECONOMY_VERSION;
-            merged.log.unshift({
-              id: `migration-${Date.now()}`,
-              time: new Date().toISOString(),
-              text: "경제 시스템 업데이트 보상으로 시작 자금 300G가 지급되었습니다."
-            });
-          }
+          merged.saveVersion = SAVE_VERSION;
+          merged.gold = Number.isFinite(Number(merged.gold)) ? Number(merged.gold) : 300;
+          merged.characters = merged.characters.map(character => ({
+            ...character,
+            alive: character.alive !== false,
+            injured: Boolean(character.injured),
+            trauma: Boolean(character.trauma),
+            successCount: Number.isFinite(Number(character.successCount))
+              ? Number(character.successCount)
+              : 0
+          }));
 
           if (merged.dungeon) {
             merged.dungeon = {
@@ -956,6 +970,7 @@
               itemUsed: false,
               bandageTargetMode: false,
               ropeRerolled: false,
+              traumaSkips: {},
               ...merged.dungeon
             };
           }
@@ -1019,7 +1034,8 @@
           icon: job.icon,
           alive: true,
           injured: false,
-          expeditions: 0
+          trauma: false,
+          successCount: 0
         };
       }
 
@@ -1143,7 +1159,6 @@
 
         members.forEach(c => {
           c.injured = false;
-          c.expeditions = (c.expeditions || 0) + 1;
         });
 
         state.dungeon = {
@@ -1158,7 +1173,8 @@
           carriedItem,
           itemUsed: false,
           bandageTargetMode: false,
-          ropeRerolled: false
+          ropeRerolled: false,
+          traumaSkips: {}
         };
 
         state.lastSummary = null;
@@ -1168,17 +1184,47 @@
         render();
       }
 
+      function prepareTraumaSkips() {
+        const dungeon = state.dungeon;
+        if (!dungeon) return;
+
+        dungeon.traumaSkips = dungeon.traumaSkips || {};
+        alivePartyMembers().forEach(character => {
+          if (!character.trauma) return;
+          if (!(character.id in dungeon.traumaSkips)) {
+            dungeon.traumaSkips[character.id] = Math.random() < 0.5;
+          }
+        });
+      }
+
       function rollPartyDice() {
+        prepareTraumaSkips();
+        const traumaSkips = state.dungeon?.traumaSkips || {};
+
         return alivePartyMembers().map(character => {
+          const skipped = Boolean(character.trauma && traumaSkips[character.id]);
+
+          if (skipped) {
+            return {
+              characterId: character.id,
+              name: character.name,
+              raw: null,
+              modifier: 0,
+              final: 0,
+              skipped: true
+            };
+          }
+
           const raw = randomInt(1, 6);
-          const modifier = character.injured ? (Math.random() < 0.5 ? -1 : 1) : 0;
+          const modifier = character.injured ? (Math.random() < 0.5 ? -2 : 2) : 0;
           const final = clamp(raw + modifier, 1, 6);
           return {
             characterId: character.id,
             name: character.name,
             raw,
             modifier,
-            final
+            final,
+            skipped: false
           };
         });
       }
@@ -1238,6 +1284,9 @@
               character.injured = false;
               result = "dead";
             } else if (survivalRoll === 2) {
+              character.trauma = true;
+              result = "trauma";
+            } else if (survivalRoll === 3) {
               character.injured = true;
               result = "injured";
             }
@@ -1252,11 +1301,13 @@
 
           dungeon.survivalResults = results;
           const deaths = results.filter(r => r.result === "dead").map(r => r.name);
+          const traumas = results.filter(r => r.result === "trauma").map(r => r.name);
           const injuries = results.filter(r => r.result === "injured").map(r => r.name);
 
           addLog(
             `${encounter.name} 실패: 합계 ${total}. ` +
             `${deaths.length ? `사망 ${deaths.join(", ")}. ` : ""}` +
+            `${traumas.length ? `트라우마 ${traumas.join(", ")}. ` : ""}` +
             `${injuries.length ? `부상 ${injuries.join(", ")}.` : "추가 부상 없음."}`
           );
         }
@@ -1358,6 +1409,7 @@
         dungeon.lastSuccess = null;
         dungeon.survivalResults = [];
         dungeon.bandageTargetMode = false;
+        dungeon.traumaSkips = {};
         save();
         render();
       }
@@ -1373,6 +1425,12 @@
 
         const injuredCount = survivingStartedMembers.filter(c => c.injured).length;
         const injuryMultiplier = Math.max(0.4, 1 - injuredCount * 0.15);
+
+        if (!partyWiped) {
+          survivingStartedMembers.forEach(character => {
+            character.successCount = (character.successCount || 0) + 1;
+          });
+        }
 
         let lockpickUsed = false;
         let boostedGold = dungeon.earnedGold;
@@ -1401,6 +1459,7 @@
           finalGold,
           partyWiped,
           survivors: survivingStartedMembers.length,
+          successAwarded: partyWiped ? 0 : survivingStartedMembers.length,
           carriedItem: dungeon.carriedItem
         };
 
@@ -1422,7 +1481,8 @@
         } else {
           addLog(
             `던전 정산 완료: ${lockpickUsed ? "락픽 +50%, " : ""}` +
-            `부상자 ${injuredCount}명, 부상 배율 ${Math.round(injuryMultiplier * 100)}%, 최종 ${finalGold}G 획득.`
+            `부상자 ${injuredCount}명, 부상 배율 ${Math.round(injuryMultiplier * 100)}%, 최종 ${finalGold}G 획득. ` +
+            `생환한 ${survivingStartedMembers.length}명의 모험 성공 횟수가 +1 되었습니다.`
           );
         }
 
@@ -1432,9 +1492,15 @@
       }
 
       function resetGame() {
-        const ok = window.confirm("모든 캐릭터, 골드, 아이템, 기록을 삭제하고 처음부터 시작할까요?");
+        const ok = window.confirm(
+          "전체 게임 데이터를 초기화할까요?\\n\\n" +
+          "골드, 모험가, 묘지, 아이템, 파티, 디버프, 성공 횟수와 기록이 모두 삭제되며 300G로 다시 시작합니다."
+        );
         if (!ok) return;
+
+        localStorage.removeItem(STORAGE_KEY);
         state = defaultState();
+        addLog("전체 게임 데이터를 초기화했습니다. 길드 자금 300G로 새 게임을 시작합니다.");
         save();
         render();
       }
@@ -1456,9 +1522,17 @@
 
         els.roster.innerHTML = living.map(character => {
           const selected = state.partyIds.includes(character.id);
-          const status = character.injured
-            ? '<span class="status-badge injury">🩹 부상</span>'
-            : '<span class="status-badge">정상</span>';
+          const statusParts = [];
+          if (character.trauma) {
+            statusParts.push('<span class="status-badge trauma">🧠 트라우마</span>');
+          }
+          if (character.injured) {
+            statusParts.push('<span class="status-badge injury">🩹 부상</span>');
+          }
+          if (!statusParts.length) {
+            statusParts.push('<span class="status-badge">정상</span>');
+          }
+          const status = `<span class="status-stack">${statusParts.join("")}</span>`;
 
           return `
             <article class="character ${selected ? "selected" : ""} ${character.injured ? "injured" : ""}"
@@ -1471,7 +1545,7 @@
               <div class="char-name">${character.name}</div>
               <div class="char-job">${character.job}</div>
               <div class="char-stats">
-                <span class="die-label">D6 🎲</span>
+                <span class="die-label">D6 🎲 · 모험 성공 ${character.successCount || 0}회</span>
                 ${status}
               </div>
             </article>
@@ -1503,7 +1577,7 @@
               <div>
                 <div class="slot-avatar">${character.icon}</div>
                 <strong>${character.name}</strong>
-                <span>${character.injured ? "부상 · D6±1" : "정상 · D6"}</span>
+                <span>${character.trauma ? "트라우마" : "정상"}${character.injured ? " · 부상 D6±2" : " · D6"} · 모험 성공 ${character.successCount || 0}회</span>
               </div>
             </div>
           `;
@@ -1571,7 +1645,7 @@
       function renderGraveyard() {
         const dead = state.characters.filter(c => !c.alive);
         els.graveyard.innerHTML = dead.length
-          ? dead.map(c => `<span class="grave">🪦 ${c.name} · ${c.job}</span>`).join("")
+          ? dead.map(c => `<span class="grave">🪦 ${c.name} · ${c.job} · 모험 성공 ${c.successCount || 0}회${c.trauma ? " · 트라우마" : ""}</span>`).join("")
           : '<span class="panel-subtitle">아직 기록된 사망자가 없습니다.</span>';
       }
 
@@ -1675,7 +1749,13 @@
                 <div class="roll">
                   <span class="who">${roll.name}</span>
                   <span class="face">${roll.final}</span>
-                  <span class="mod">${roll.modifier ? `원본 ${roll.raw} / ${roll.modifier > 0 ? "+1" : "-1"}` : "보정 없음"}</span>
+                  <span class="mod">${
+                    roll.skipped
+                      ? "트라우마 발동 · 주사위 미사용"
+                      : roll.modifier
+                        ? `원본 ${roll.raw} / ${roll.modifier > 0 ? "+2" : "-2"}`
+                        : "보정 없음"
+                  }</span>
                 </div>
               `).join("")}
             </div>
@@ -1696,14 +1776,18 @@
                 ${dungeon.survivalResults.map(result => {
                   const text = result.result === "dead"
                     ? "사망"
-                    : result.result === "injured"
-                      ? "부상"
-                      : "생존";
+                    : result.result === "trauma"
+                      ? "트라우마"
+                      : result.result === "injured"
+                        ? "부상"
+                        : "생존";
                   const cls = result.result === "dead"
                     ? "dead-text"
-                    : result.result === "injured"
-                      ? "injury-text"
-                      : "safe-text";
+                    : result.result === "trauma"
+                      ? "trauma-text"
+                      : result.result === "injured"
+                        ? "injury-text"
+                        : "safe-text";
                   return `
                     <div class="survival-row">
                       <span>${result.name} · 판정 ${result.roll}</span>
@@ -1743,7 +1827,7 @@
             <div class="encounter-kicker">Encounter ${dungeon.index + 1}</div>
             <h3>${encounter.name}</h3>
             <p class="panel-subtitle">
-              살아 있는 파티원 전원이 주사위를 굴립니다. 부상자는 결과에 ±1 보정을 받습니다.
+              트라우마 캐릭터는 인카운터마다 50% 확률로 주사위를 굴리지 못합니다. 부상자는 굴림에 ±2 보정을 받습니다.
             </p>
             ${renderDungeonTool(dungeon)}
             <div class="requirement">
@@ -1796,7 +1880,7 @@
           </div>
           <div class="summary">
             <div><span>부상 배율</span><strong>${s.partyWiped ? "0%" : `${Math.round(s.multiplier * 100)}%`}</strong></div>
-            <div><span>생존 인원</span><strong>${s.survivors}명</strong></div>
+            <div><span>모험 성공 +1</span><strong>${s.successAwarded ?? s.survivors}명</strong></div>
             <div><span>최종 보상</span><strong>${s.finalGold}G</strong></div>
           </div>
         `;
