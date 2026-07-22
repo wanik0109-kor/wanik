@@ -176,7 +176,7 @@
     .character {
       position: relative;
       overflow: hidden;
-      min-height: 158px;
+      min-height: 196px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 15px;
@@ -266,6 +266,37 @@
       font-size: .82rem;
     }
 
+    .char-profile {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .profile-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: #d6cde0;
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.075);
+      font-size: .69rem;
+      font-weight: 750;
+    }
+
+    .char-personality {
+      margin-top: 8px;
+      color: #dcb8ef;
+      font-size: .75rem;
+      line-height: 1.45;
+    }
+
+    .char-personality strong {
+      color: #f2dcff;
+    }
+
     .char-stats {
       display: flex;
       justify-content: space-between;
@@ -315,7 +346,7 @@
 
     .slot .slot-avatar { font-size: 1.45rem; }
     .slot strong { display: block; margin-top: 6px; font-size: .82rem; }
-    .slot span { color: var(--muted); font-size: .72rem; }
+    .slot span { display: block; color: var(--muted); font-size: .72rem; line-height: 1.45; }
 
     .dungeon-card {
       min-height: 355px;
@@ -900,80 +931,51 @@
     </section>
   </main>
 
+  <script src="./game-db.js"></script>
   <script>
     (() => {
       "use strict";
 
       const STORAGE_KEY = "dicebound-expedition-v1";
-      const SAVE_VERSION = 4;
-      const GACHA_COST = 10;
+      const SAVE_VERSION = 5;
 
-      const DIFFICULTIES = {
-        easy: {
-          key: "easy",
-          name: "이지",
-          rangeSize: 9,
-          rewardMultiplier: 1,
-          description: "성공 범위 9칸 · 보상 100%"
-        },
-        normal: {
-          key: "normal",
-          name: "노멀",
-          rangeSize: 7,
-          rewardMultiplier: 1.3,
-          description: "성공 범위 7칸 · 보상 130%"
-        },
-        hard: {
-          key: "hard",
-          name: "하드",
-          rangeSize: 5,
-          rewardMultiplier: 1.7,
-          description: "성공 범위 5칸 · 보상 170%"
-        }
-      };
-
-      const ITEM_DEFS = {
-        rope: {
-          name: "밧줄",
-          icon: "🪢",
-          price: 30,
-          description: "주사위를 확인한 뒤 파티 전체를 한 번 다시 굴립니다."
-        },
-        bandage: {
-          name: "붕대",
-          icon: "🩹",
-          price: 20,
-          description: "주사위를 굴리기 전에 부상 캐릭터 1명을 치료합니다."
-        },
-        lockpick: {
-          name: "락픽",
-          icon: "🗝️",
-          price: 50,
-          description: "생환하여 던전을 완료하면 누적 골드 보상이 50% 증가합니다."
-        }
-      };
-
-      const NAMES = [
-        "로안", "미라", "카엘", "세라", "브린", "노아", "티아", "에른",
-        "루체", "다린", "베라", "하칸", "리오", "유나", "오르", "네브"
+      const GAME_DB = globalThis.GAME_DB;
+      const requiredLists = [
+        "firstNames",
+        "lastNames",
+        "jobs",
+        "races",
+        "genders",
+        "personalities",
+        "encounterNames"
       ];
 
-      const JOBS = [
-        { name: "떠돌이 검사", icon: "⚔️" },
-        { name: "숲의 정찰자", icon: "🏹" },
-        { name: "룬 연구가", icon: "🔮" },
-        { name: "방패 용병", icon: "🛡️" },
-        { name: "유적 도굴꾼", icon: "🗝️" },
-        { name: "야전 치유사", icon: "🌿" },
-        { name: "연금술 견습생", icon: "⚗️" },
-        { name: "괴물 사냥꾼", icon: "🐺" }
-      ];
+      const invalidDatabase = !GAME_DB
+        || requiredLists.some(key => !Array.isArray(GAME_DB[key]) || GAME_DB[key].length === 0)
+        || !GAME_DB.items
+        || !GAME_DB.difficulties;
 
-      const ENCOUNTER_NAMES = [
-        "무너지는 철문", "괴수의 돌진", "봉인석 파괴", "용암 협곡 도약",
-        "거인의 쇠사슬", "침수된 수문", "잠든 감시자", "낡은 유리 다리",
-        "독가스 회랑", "그림자 숲 잠입", "폭주하는 마력핵", "메아리 금지 구역"
-      ];
+      if (invalidDatabase) {
+        document.body.innerHTML = `
+          <main class="app-shell">
+            <section class="panel" style="margin-top:24px">
+              <h1 style="margin-top:0">게임 데이터 파일을 불러오지 못했습니다.</h1>
+              <p class="panel-subtitle">
+                <strong>game-db.js</strong> 파일이 index.html과 같은 폴더에 있는지 확인해 주세요.
+                GitHub의 파일명과 대소문자도 정확히 같아야 합니다.
+              </p>
+            </section>
+          </main>
+        `;
+        console.error("GAME_DB가 없거나 필수 데이터가 비어 있습니다.");
+        return;
+      }
+
+      const GACHA_COST = Number(GAME_DB.settings?.gachaCost) || 10;
+      const STARTING_GOLD = Number(GAME_DB.settings?.startingGold) || 300;
+      const DIFFICULTIES = GAME_DB.difficulties;
+      const ITEM_DEFS = GAME_DB.items;
+      const ENCOUNTER_NAMES = GAME_DB.encounterNames;
 
       const els = {
         gold: document.getElementById("gold"),
@@ -997,7 +999,7 @@
       function defaultState() {
         return {
           saveVersion: SAVE_VERSION,
-          gold: 300,
+          gold: STARTING_GOLD,
           inventory: { rope: 0, bandage: 0, lockpick: 0 },
           selectedItem: null,
           selectedDifficulty: "easy",
@@ -1028,19 +1030,41 @@
           };
 
           merged.saveVersion = SAVE_VERSION;
-          merged.gold = Number.isFinite(Number(merged.gold)) ? Number(merged.gold) : 300;
+          merged.gold = Number.isFinite(Number(merged.gold)) ? Number(merged.gold) : STARTING_GOLD;
           merged.selectedDifficulty = DIFFICULTIES[merged.selectedDifficulty]
             ? merged.selectedDifficulty
             : "easy";
-          merged.characters = merged.characters.map(character => ({
-            ...character,
-            alive: character.alive !== false,
-            injured: Boolean(character.injured),
-            trauma: Boolean(character.trauma),
-            successCount: Number.isFinite(Number(character.successCount))
-              ? Number(character.successCount)
-              : 0
-          }));
+          merged.characters = merged.characters.map(character => {
+            const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
+            const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
+            const matchedJob = findDbEntry(GAME_DB.jobs, character.jobId)
+              || GAME_DB.jobs.find(job => job.name === character.job);
+            const race = findDbEntry(GAME_DB.races, character.raceId);
+            const gender = findDbEntry(GAME_DB.genders, character.genderId);
+            const personality = findDbEntry(GAME_DB.personalities, character.personalityId);
+
+            return {
+              ...character,
+              firstNameId: firstName?.id || null,
+              lastNameId: lastName?.id || null,
+              legacyName: character.legacyName
+                || (!(firstName && lastName) ? (character.name || null) : null),
+              jobId: matchedJob?.id || null,
+              legacyJobName: character.legacyJobName
+                || (!matchedJob ? (character.job || null) : null),
+              legacyJobIcon: character.legacyJobIcon
+                || (!matchedJob ? (character.icon || "🧭") : null),
+              raceId: race?.id || pick(GAME_DB.races).id,
+              genderId: gender?.id || pick(GAME_DB.genders).id,
+              personalityId: personality?.id || pick(GAME_DB.personalities).id,
+              alive: character.alive !== false,
+              injured: Boolean(character.injured),
+              trauma: Boolean(character.trauma),
+              successCount: Number.isFinite(Number(character.successCount))
+                ? Number(character.successCount)
+                : 0
+            };
+          });
 
           if (merged.dungeon) {
             const migratedDifficulty = DIFFICULTIES[merged.dungeon.difficulty]
@@ -1114,6 +1138,54 @@
         return list[randomInt(0, list.length - 1)];
       }
 
+      function findDbEntry(list, id) {
+        if (!id || !Array.isArray(list)) return null;
+        return list.find(entry => entry.id === id) || null;
+      }
+
+      function getCharacterName(character) {
+        if (character.legacyName) return character.legacyName;
+
+        const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
+        const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
+        const fullName = [firstName?.name, lastName?.name].filter(Boolean).join(" ");
+
+        return fullName || character.name || "이름 없는 모험가";
+      }
+
+      function getCharacterJob(character) {
+        const job = findDbEntry(GAME_DB.jobs, character.jobId);
+
+        return job || {
+          id: null,
+          name: character.legacyJobName || character.job || "무직",
+          icon: character.legacyJobIcon || character.icon || "🧭",
+          description: "이전 버전에서 모집된 모험가의 직업입니다."
+        };
+      }
+
+      function getCharacterProfile(character) {
+        return {
+          name: getCharacterName(character),
+          job: getCharacterJob(character),
+          race: findDbEntry(GAME_DB.races, character.raceId)
+            || { id: null, name: "미상", description: "" },
+          gender: findDbEntry(GAME_DB.genders, character.genderId)
+            || { id: null, name: "미상" },
+          personality: findDbEntry(GAME_DB.personalities, character.personalityId)
+            || { id: null, name: "성격 미상", description: "" }
+        };
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
       function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
       }
@@ -1137,12 +1209,14 @@
       }
 
       function createCharacter() {
-        const job = pick(JOBS);
         return {
           id: uid(),
-          name: pick(NAMES),
-          job: job.name,
-          icon: job.icon,
+          firstNameId: pick(GAME_DB.firstNames).id,
+          lastNameId: pick(GAME_DB.lastNames).id,
+          jobId: pick(GAME_DB.jobs).id,
+          raceId: pick(GAME_DB.races).id,
+          genderId: pick(GAME_DB.genders).id,
+          personalityId: pick(GAME_DB.personalities).id,
           alive: true,
           injured: false,
           trauma: false,
@@ -1164,7 +1238,7 @@
         state.gold -= cost;
         const newcomers = Array.from({ length: count }, createCharacter);
         state.characters.push(...newcomers);
-        addLog(`${cost}G를 사용해 ${newcomers.map(c => c.name).join(", ")} — ${count}명의 모험가를 소환했습니다.`);
+        addLog(`${cost}G를 사용해 ${newcomers.map(getCharacterName).join(", ")} — ${count}명의 모험가를 소환했습니다.`);
         save();
         render();
       }
@@ -1312,7 +1386,7 @@
         state.lastSummary = null;
         const itemText = carriedItem ? ` 도구는 ${ITEM_DEFS[carriedItem].name}입니다.` : " 도구 없이 출발합니다.";
         addLog(
-          `${members.map(c => c.name).join(", ")} 파티가 ${difficulty.name} 던전에 입장했습니다.` +
+          `${members.map(getCharacterName).join(", ")} 파티가 ${difficulty.name} 던전에 입장했습니다.` +
           `${itemText}`
         );
         save();
@@ -1342,7 +1416,7 @@
           if (skipped) {
             return {
               characterId: character.id,
-              name: character.name,
+              name: getCharacterName(character),
               raw: null,
               modifier: 0,
               final: 0,
@@ -1355,7 +1429,7 @@
           const final = clamp(raw + modifier, 1, 6);
           return {
             characterId: character.id,
-            name: character.name,
+            name: getCharacterName(character),
             raw,
             modifier,
             final,
@@ -1426,7 +1500,7 @@
 
             results.push({
               characterId: character.id,
-              name: character.name,
+              name: getCharacterName(character),
               roll: survivalRoll,
               result
             });
@@ -1510,7 +1584,7 @@
         dungeon.itemUsed = true;
         dungeon.bandageTargetMode = false;
         character.injured = false;
-        addLog(`붕대 1개를 사용해 ${character.name}의 부상을 치료했습니다.`);
+        addLog(`붕대 1개를 사용해 ${getCharacterName(character)}의 부상을 치료했습니다.`);
         save();
         render();
       }
@@ -1628,13 +1702,13 @@
       function resetGame() {
         const ok = window.confirm(
           "전체 게임 데이터를 초기화할까요?\\n\\n" +
-          "골드, 모험가, 묘지, 아이템, 파티, 디버프, 성공 횟수와 기록이 모두 삭제되며 300G로 다시 시작합니다."
+          "골드, 모험가, 묘지, 아이템, 파티, 디버프, 성공 횟수와 기록이 모두 삭제되며 시작 골드로 다시 시작합니다."
         );
         if (!ok) return;
 
         localStorage.removeItem(STORAGE_KEY);
         state = defaultState();
-        addLog("전체 게임 데이터를 초기화했습니다. 길드 자금 300G로 새 게임을 시작합니다.");
+        addLog(`전체 게임 데이터를 초기화했습니다. 길드 자금 ${STARTING_GOLD}G로 새 게임을 시작합니다.`);
         save();
         render();
       }
@@ -1656,6 +1730,14 @@
 
         els.roster.innerHTML = living.map(character => {
           const selected = state.partyIds.includes(character.id);
+          const profile = getCharacterProfile(character);
+          const safeName = escapeHtml(profile.name);
+          const safeJob = escapeHtml(profile.job.name);
+          const safeRace = escapeHtml(profile.race.name);
+          const safeGender = escapeHtml(profile.gender.name);
+          const safePersonality = escapeHtml(profile.personality.name);
+          const safePersonalityDescription = escapeHtml(profile.personality.description || "");
+
           const statusParts = [];
           if (character.trauma) {
             statusParts.push('<span class="status-badge trauma">🧠 트라우마</span>');
@@ -1671,13 +1753,20 @@
           return `
             <article class="character ${selected ? "selected" : ""} ${character.injured ? "injured" : ""}"
               data-character-id="${character.id}" role="button" tabindex="0"
-              aria-label="${character.name} 파티 편성">
+              aria-label="${safeName} 파티 편성">
               <div class="char-top">
-                <div class="avatar">${character.icon}</div>
+                <div class="avatar">${profile.job.icon}</div>
                 <span class="party-badge ${selected ? "on" : ""}">${selected ? "파티" : "대기"}</span>
               </div>
-              <div class="char-name">${character.name}</div>
-              <div class="char-job">${character.job}</div>
+              <div class="char-name">${safeName}</div>
+              <div class="char-job">${safeJob}</div>
+              <div class="char-profile">
+                <span class="profile-chip">${safeGender}</span>
+                <span class="profile-chip">${safeRace}</span>
+              </div>
+              <div class="char-personality" title="${safePersonalityDescription}">
+                성격 · <strong>${safePersonality}</strong>
+              </div>
               <div class="char-stats">
                 <span class="die-label">D6 🎲 · 모험 성공 ${character.successCount || 0}회</span>
                 ${status}
@@ -1706,11 +1795,15 @@
             return `<div class="slot"><div><div class="slot-avatar">＋</div><span>빈 자리</span></div></div>`;
           }
 
+          const profile = getCharacterProfile(character);
+
           return `
             <div class="slot filled">
               <div>
-                <div class="slot-avatar">${character.icon}</div>
-                <strong>${character.name}</strong>
+                <div class="slot-avatar">${profile.job.icon}</div>
+                <strong>${escapeHtml(profile.name)}</strong>
+                <span>${escapeHtml(profile.gender.name)} · ${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)}</span>
+                <span>성격 ${escapeHtml(profile.personality.name)}</span>
                 <span>${character.trauma ? "트라우마" : "정상"}${character.injured ? " · 부상 D6±2" : " · D6"} · 모험 성공 ${character.successCount || 0}회</span>
               </div>
             </div>
@@ -1779,7 +1872,10 @@
       function renderGraveyard() {
         const dead = state.characters.filter(c => !c.alive);
         els.graveyard.innerHTML = dead.length
-          ? dead.map(c => `<span class="grave">🪦 ${c.name} · ${c.job} · 모험 성공 ${c.successCount || 0}회${c.trauma ? " · 트라우마" : ""}</span>`).join("")
+          ? dead.map(character => {
+              const profile = getCharacterProfile(character);
+              return `<span class="grave">🪦 ${escapeHtml(profile.name)} · ${escapeHtml(profile.gender.name)} ${escapeHtml(profile.race.name)} ${escapeHtml(profile.job.name)} · 성격 ${escapeHtml(profile.personality.name)} · 모험 성공 ${character.successCount || 0}회${character.trauma ? " · 트라우마" : ""}</span>`;
+            }).join("")
           : '<span class="panel-subtitle">아직 기록된 사망자가 없습니다.</span>';
       }
 
@@ -1827,7 +1923,10 @@
           if (dungeon.bandageTargetMode && injured.length) {
             actions += `
               <div class="target-list">
-                ${injured.map(c => `<button data-bandage-target="${c.id}">${c.icon} ${c.name} 치료</button>`).join("")}
+                ${injured.map(character => {
+                  const profile = getCharacterProfile(character);
+                  return `<button data-bandage-target="${character.id}">${profile.job.icon} ${escapeHtml(profile.name)} 치료</button>`;
+                }).join("")}
               </div>
             `;
           }
