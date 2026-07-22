@@ -559,6 +559,131 @@
       font-size: .72rem;
     }
 
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .item-card {
+      position: relative;
+      min-height: 150px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-2);
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .item-card:hover:not(.disabled) { transform: translateY(-2px); }
+
+    .item-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(217, 164, 65, .18);
+    }
+
+    .item-card.disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
+    .item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .item-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(255,255,255,.07);
+      font-size: 1.45rem;
+    }
+
+    .item-count {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #17121f;
+      color: var(--accent-2);
+      font-size: .75rem;
+      font-weight: 900;
+    }
+
+    .item-name {
+      margin: 10px 0 4px;
+      font-weight: 900;
+    }
+
+    .item-desc {
+      min-height: 40px;
+      color: var(--muted);
+      font-size: .73rem;
+      line-height: 1.45;
+    }
+
+    .item-buy {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px 10px;
+      font-size: .76rem;
+    }
+
+    .carry-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.5;
+    }
+
+    .tool-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      font-size: .8rem;
+    }
+
+    .tool-banner strong { color: var(--accent); }
+
+    .tool-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tool-actions button {
+      flex: 1;
+      min-width: 145px;
+    }
+
+    .target-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .target-list button {
+      color: var(--text);
+      background: #3b3048;
+      border: 1px solid var(--line);
+      font-size: .78rem;
+    }
+
+    .bonus-text { color: var(--accent); font-weight: 900; }
+
     .shake { animation: shake .32s ease; }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -576,7 +701,7 @@
       .resources { width: 100%; justify-content: stretch; }
       .resource { flex: 1; text-align: left; }
       .panel { padding: 14px; }
-      .party-slots, .rolls { grid-template-columns: repeat(2, 1fr); }
+      .party-slots, .rolls, .item-grid, .target-list { grid-template-columns: repeat(2, 1fr); }
       .rules { grid-template-columns: 1fr; }
       .panel-header { align-items: flex-start; flex-direction: column; }
     }
@@ -601,12 +726,12 @@
         <section class="panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">무료 가챠</h2>
-              <p class="panel-subtitle">현재 테스트 버전에서는 소환 비용이 없습니다.</p>
+              <h2 class="panel-title">모험가 가챠</h2>
+              <p class="panel-subtitle">소환 1회당 10골드가 소모됩니다.</p>
             </div>
             <div class="actions">
-              <button id="drawOneBtn">1명 뽑기</button>
-              <button id="drawFourBtn" class="secondary">4명 빠른 뽑기</button>
+              <button id="drawOneBtn">1명 뽑기 · 10G</button>
+              <button id="drawFourBtn" class="secondary">4명 빠른 뽑기 · 40G</button>
             </div>
           </div>
         </section>
@@ -638,6 +763,17 @@
         <section class="panel">
           <div class="panel-header">
             <div>
+              <h2 class="panel-title">원정 도구</h2>
+              <p class="panel-subtitle">상점에서 구매한 뒤 카드 전체를 눌러 원정에 가져갈 도구 1개를 선택합니다.</p>
+            </div>
+          </div>
+          <div id="itemInventory" class="item-grid"></div>
+          <div id="carryNote" class="carry-note"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
               <h2 class="panel-title">묘지</h2>
               <p class="panel-subtitle">던전에서 사망한 모험가는 돌아오지 않습니다.</p>
             </div>
@@ -661,7 +797,7 @@
           <div class="panel-header">
             <div>
               <h2 class="panel-title">최근 탐험 정산</h2>
-              <p class="panel-subtitle">부상자 1명마다 누적 보상이 15% 감소합니다.</p>
+              <p class="panel-subtitle">락픽 보너스를 적용한 뒤 부상자 1명마다 보상이 15% 감소합니다.</p>
             </div>
           </div>
           <div id="lastSummary"></div>
@@ -685,9 +821,11 @@
             </div>
           </div>
           <div class="rules">
+            <div class="rule"><strong>가챠</strong>새 게임은 300G로 시작하며 모험가 1명 소환에 10G가 듭니다.</div>
             <div class="rule"><strong>인카운터</strong>파티원의 주사위 합계가 ‘이상’ 또는 ‘이하’ 조건을 만족하면 성공합니다.</div>
             <div class="rule"><strong>실패 생존 판정</strong>1은 사망, 2는 부상, 3~6은 무사 생존입니다.</div>
             <div class="rule"><strong>부상</strong>중첩되지 않으며 이후 주사위에 무작위 +1 또는 -1이 적용됩니다.</div>
+            <div class="rule"><strong>원정 도구</strong>밧줄은 전체 재굴림, 붕대는 부상 치료, 락픽은 완료 보상 +50%입니다.</div>
             <div class="rule"><strong>던전 종료</strong>부상자 수에 따라 보상을 줄인 뒤 모든 생존자의 부상이 회복됩니다.</div>
           </div>
         </section>
@@ -700,6 +838,29 @@
       "use strict";
 
       const STORAGE_KEY = "dicebound-expedition-v1";
+      const ECONOMY_VERSION = 2;
+      const GACHA_COST = 10;
+
+      const ITEM_DEFS = {
+        rope: {
+          name: "밧줄",
+          icon: "🪢",
+          price: 30,
+          description: "주사위를 확인한 뒤 파티 전체를 한 번 다시 굴립니다."
+        },
+        bandage: {
+          name: "붕대",
+          icon: "🩹",
+          price: 20,
+          description: "주사위를 굴리기 전에 부상 캐릭터 1명을 치료합니다."
+        },
+        lockpick: {
+          name: "락픽",
+          icon: "🗝️",
+          price: 50,
+          description: "생환하여 던전을 완료하면 누적 골드 보상이 50% 증가합니다."
+        }
+      };
 
       const NAMES = [
         "로안", "미라", "카엘", "세라", "브린", "노아", "티아", "에른",
@@ -733,6 +894,8 @@
         deadCount: document.getElementById("deadCount"),
         roster: document.getElementById("roster"),
         partySlots: document.getElementById("partySlots"),
+        itemInventory: document.getElementById("itemInventory"),
+        carryNote: document.getElementById("carryNote"),
         graveyard: document.getElementById("graveyard"),
         dungeonArea: document.getElementById("dungeonArea"),
         lastSummary: document.getElementById("lastSummary"),
@@ -746,7 +909,10 @@
 
       function defaultState() {
         return {
-          gold: 0,
+          economyVersion: ECONOMY_VERSION,
+          gold: 300,
+          inventory: { rope: 0, bandage: 0, lockpick: 0 },
+          selectedItem: null,
           characters: [],
           partyIds: [],
           dungeon: null,
@@ -759,14 +925,42 @@
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return defaultState();
+
           const parsed = JSON.parse(raw);
-          return {
+          const merged = {
             ...defaultState(),
             ...parsed,
+            inventory: {
+              ...defaultState().inventory,
+              ...(parsed.inventory || {})
+            },
             characters: Array.isArray(parsed.characters) ? parsed.characters : [],
             partyIds: Array.isArray(parsed.partyIds) ? parsed.partyIds : [],
             log: Array.isArray(parsed.log) ? parsed.log : []
           };
+
+          // 구버전 저장 데이터에는 시작 자금 300G를 한 번만 지급합니다.
+          if (parsed.economyVersion !== ECONOMY_VERSION) {
+            merged.gold = (Number(parsed.gold) || 0) + 300;
+            merged.economyVersion = ECONOMY_VERSION;
+            merged.log.unshift({
+              id: `migration-${Date.now()}`,
+              time: new Date().toISOString(),
+              text: "경제 시스템 업데이트 보상으로 시작 자금 300G가 지급되었습니다."
+            });
+          }
+
+          if (merged.dungeon) {
+            merged.dungeon = {
+              carriedItem: null,
+              itemUsed: false,
+              bandageTargetMode: false,
+              ropeRerolled: false,
+              ...merged.dungeon
+            };
+          }
+
+          return merged;
         } catch (error) {
           console.warn("저장 데이터를 불러오지 못했습니다.", error);
           return defaultState();
@@ -831,9 +1025,46 @@
 
       function drawCharacters(count) {
         if (state.dungeon) return;
+        const cost = count * GACHA_COST;
+
+        if (state.gold < cost) {
+          addLog(`소환 실패: ${cost}G가 필요하지만 현재 ${state.gold}G를 보유하고 있습니다.`);
+          save();
+          render();
+          return;
+        }
+
+        state.gold -= cost;
         const newcomers = Array.from({ length: count }, createCharacter);
         state.characters.push(...newcomers);
-        addLog(`${newcomers.map(c => c.name).join(", ")} — ${count}명의 모험가를 무료 소환했습니다.`);
+        addLog(`${cost}G를 사용해 ${newcomers.map(c => c.name).join(", ")} — ${count}명의 모험가를 소환했습니다.`);
+        save();
+        render();
+      }
+
+      function buyItem(key) {
+        if (state.dungeon) return;
+        const item = ITEM_DEFS[key];
+        if (!item) return;
+
+        if (state.gold < item.price) {
+          addLog(`${item.name} 구매 실패: ${item.price}G가 필요합니다.`);
+          save();
+          render();
+          return;
+        }
+
+        state.gold -= item.price;
+        state.inventory[key] += 1;
+        addLog(`${item.name} 1개를 ${item.price}G에 구매했습니다.`);
+        save();
+        render();
+      }
+
+      function selectItem(key) {
+        if (state.dungeon) return;
+        if (!ITEM_DEFS[key] || state.inventory[key] <= 0) return;
+        state.selectedItem = state.selectedItem === key ? null : key;
         save();
         render();
       }
@@ -873,7 +1104,7 @@
 
       function generateEncounter() {
         const type = Math.random() < 0.5 ? "gte" : "lte";
-        const target = type === "gte" ? randomInt(8, 20) : randomInt(8, 20);
+        const target = randomInt(8, 20);
         const difficulty = type === "gte" ? target - 4 : 24 - target;
         const reward = 18 + difficulty * 3 + randomInt(0, 8);
 
@@ -904,6 +1135,12 @@
           return;
         }
 
+        let carriedItem = state.selectedItem;
+        if (carriedItem && state.inventory[carriedItem] <= 0) {
+          carriedItem = null;
+          state.selectedItem = null;
+        }
+
         members.forEach(c => {
           c.injured = false;
           c.expeditions = (c.expeditions || 0) + 1;
@@ -917,23 +1154,22 @@
           lastRolls: [],
           lastSuccess: null,
           survivalResults: [],
-          startedPartyIds: [...state.partyIds]
+          startedPartyIds: [...state.partyIds],
+          carriedItem,
+          itemUsed: false,
+          bandageTargetMode: false,
+          ropeRerolled: false
         };
 
         state.lastSummary = null;
-        addLog(`${members.map(c => c.name).join(", ")} 파티가 던전에 입장했습니다.`);
+        const itemText = carriedItem ? ` 도구는 ${ITEM_DEFS[carriedItem].name}입니다.` : " 도구 없이 출발합니다.";
+        addLog(`${members.map(c => c.name).join(", ")} 파티가 던전에 입장했습니다.${itemText}`);
         save();
         render();
       }
 
-      function rollEncounter() {
-        const dungeon = state.dungeon;
-        if (!dungeon || dungeon.phase !== "ready") return;
-
-        const encounter = dungeon.encounters[dungeon.index];
-        const members = alivePartyMembers();
-
-        const rolls = members.map(character => {
+      function rollPartyDice() {
+        return alivePartyMembers().map(character => {
           const raw = randomInt(1, 6);
           const modifier = character.injured ? (Math.random() < 0.5 ? -1 : 1) : 0;
           const final = clamp(raw + modifier, 1, 6);
@@ -945,13 +1181,44 @@
             final
           };
         });
+      }
 
-        const total = rolls.reduce((sum, roll) => sum + roll.final, 0);
+      function rollEncounter() {
+        const dungeon = state.dungeon;
+        if (!dungeon || dungeon.phase !== "ready") return;
+
+        dungeon.bandageTargetMode = false;
+        dungeon.lastRolls = rollPartyDice();
+        dungeon.lastSuccess = null;
+        dungeon.survivalResults = [];
+
+        const ropeReady =
+          dungeon.carriedItem === "rope" &&
+          !dungeon.itemUsed &&
+          state.inventory.rope > 0;
+
+        if (ropeReady) {
+          dungeon.phase = "rolled";
+          addLog(`${dungeon.encounters[dungeon.index].name}: 주사위 결과를 확인했습니다. 밧줄로 한 번 재굴림할 수 있습니다.`);
+          save();
+          render();
+          animateEncounter();
+          return;
+        }
+
+        resolveCurrentRolls();
+      }
+
+      function resolveCurrentRolls() {
+        const dungeon = state.dungeon;
+        if (!dungeon || !["rolled", "ready"].includes(dungeon.phase) || !dungeon.lastRolls.length) return;
+
+        const encounter = dungeon.encounters[dungeon.index];
+        const total = dungeon.lastRolls.reduce((sum, roll) => sum + roll.final, 0);
         const success = encounter.type === "gte"
           ? total >= encounter.target
           : total <= encounter.target;
 
-        dungeon.lastRolls = rolls;
         dungeon.lastSuccess = success;
         dungeon.survivalResults = [];
 
@@ -962,7 +1229,7 @@
           );
         } else {
           const results = [];
-          members.forEach(character => {
+          alivePartyMembers().forEach(character => {
             const survivalRoll = randomInt(1, 6);
             let result = "safe";
 
@@ -997,7 +1264,74 @@
         dungeon.phase = "resolved";
         save();
         render();
+        animateEncounter();
+      }
 
+      function confirmRolledResult() {
+        const dungeon = state.dungeon;
+        if (!dungeon || dungeon.phase !== "rolled") return;
+        resolveCurrentRolls();
+      }
+
+      function useRope() {
+        const dungeon = state.dungeon;
+        if (
+          !dungeon ||
+          dungeon.phase !== "rolled" ||
+          dungeon.carriedItem !== "rope" ||
+          dungeon.itemUsed ||
+          state.inventory.rope <= 0
+        ) return;
+
+        state.inventory.rope -= 1;
+        dungeon.itemUsed = true;
+        dungeon.ropeRerolled = true;
+        dungeon.lastRolls = rollPartyDice();
+        addLog("밧줄 1개를 사용해 파티 전체의 주사위를 다시 굴렸습니다.");
+        resolveCurrentRolls();
+      }
+
+      function toggleBandageTargets() {
+        const dungeon = state.dungeon;
+        if (
+          !dungeon ||
+          dungeon.phase !== "ready" ||
+          dungeon.carriedItem !== "bandage" ||
+          dungeon.itemUsed ||
+          state.inventory.bandage <= 0
+        ) return;
+
+        dungeon.bandageTargetMode = !dungeon.bandageTargetMode;
+        save();
+        render();
+      }
+
+      function useBandage(characterId) {
+        const dungeon = state.dungeon;
+        const character = state.characters.find(c => c.id === characterId);
+
+        if (
+          !dungeon ||
+          dungeon.phase !== "ready" ||
+          dungeon.carriedItem !== "bandage" ||
+          dungeon.itemUsed ||
+          state.inventory.bandage <= 0 ||
+          !character ||
+          !character.alive ||
+          !character.injured ||
+          !state.partyIds.includes(character.id)
+        ) return;
+
+        state.inventory.bandage -= 1;
+        dungeon.itemUsed = true;
+        dungeon.bandageTargetMode = false;
+        character.injured = false;
+        addLog(`붕대 1개를 사용해 ${character.name}의 부상을 치료했습니다.`);
+        save();
+        render();
+      }
+
+      function animateEncounter() {
         const card = document.querySelector(".encounter");
         if (card) {
           card.classList.remove("shake");
@@ -1023,6 +1357,7 @@
         dungeon.lastRolls = [];
         dungeon.lastSuccess = null;
         dungeon.survivalResults = [];
+        dungeon.bandageTargetMode = false;
         save();
         render();
       }
@@ -1037,17 +1372,36 @@
           .filter(c => c.alive);
 
         const injuredCount = survivingStartedMembers.filter(c => c.injured).length;
-        const multiplier = Math.max(0.4, 1 - injuredCount * 0.15);
-        const finalGold = partyWiped ? 0 : Math.floor(dungeon.earnedGold * multiplier);
+        const injuryMultiplier = Math.max(0.4, 1 - injuredCount * 0.15);
 
+        let lockpickUsed = false;
+        let boostedGold = dungeon.earnedGold;
+
+        if (
+          !partyWiped &&
+          dungeon.carriedItem === "lockpick" &&
+          !dungeon.itemUsed &&
+          state.inventory.lockpick > 0
+        ) {
+          state.inventory.lockpick -= 1;
+          dungeon.itemUsed = true;
+          lockpickUsed = true;
+          boostedGold = Math.floor(dungeon.earnedGold * 1.5);
+        }
+
+        const finalGold = partyWiped ? 0 : Math.floor(boostedGold * injuryMultiplier);
         state.gold += finalGold;
+
         state.lastSummary = {
           earnedGold: dungeon.earnedGold,
+          boostedGold,
+          lockpickUsed,
           injuredCount,
-          multiplier,
+          multiplier: injuryMultiplier,
           finalGold,
           partyWiped,
-          survivors: survivingStartedMembers.length
+          survivors: survivingStartedMembers.length,
+          carriedItem: dungeon.carriedItem
         };
 
         state.characters.forEach(c => {
@@ -1059,11 +1413,16 @@
           return c && c.alive;
         });
 
+        if (dungeon.carriedItem && state.inventory[dungeon.carriedItem] <= 0) {
+          state.selectedItem = null;
+        }
+
         if (partyWiped) {
           addLog(`원정대 전멸. 누적 보상 ${dungeon.earnedGold}G를 회수하지 못했습니다.`);
         } else {
           addLog(
-            `던전 정산 완료: 부상자 ${injuredCount}명, 보상 배율 ${Math.round(multiplier * 100)}%, 최종 ${finalGold}G 획득.`
+            `던전 정산 완료: ${lockpickUsed ? "락픽 +50%, " : ""}` +
+            `부상자 ${injuredCount}명, 부상 배율 ${Math.round(injuryMultiplier * 100)}%, 최종 ${finalGold}G 획득.`
           );
         }
 
@@ -1073,7 +1432,7 @@
       }
 
       function resetGame() {
-        const ok = window.confirm("모든 캐릭터, 골드, 기록을 삭제하고 처음부터 시작할까요?");
+        const ok = window.confirm("모든 캐릭터, 골드, 아이템, 기록을 삭제하고 처음부터 시작할까요?");
         if (!ok) return;
         state = defaultState();
         save();
@@ -1091,7 +1450,7 @@
       function renderRoster() {
         const living = state.characters.filter(c => c.alive);
         if (!living.length) {
-          els.roster.innerHTML = '<div class="empty">아직 모험가가 없습니다.<br>무료 가챠로 첫 파티를 모아보세요.</div>';
+          els.roster.innerHTML = '<div class="empty">아직 모험가가 없습니다.<br>10골드 가챠로 첫 파티를 모아보세요.</div>';
           return;
         }
 
@@ -1153,6 +1512,62 @@
         els.partySlots.innerHTML = slots.join("");
       }
 
+      function renderItems() {
+        const locked = Boolean(state.dungeon);
+        const carried = state.dungeon?.carriedItem || null;
+
+        els.itemInventory.innerHTML = Object.entries(ITEM_DEFS).map(([key, item]) => {
+          const count = state.inventory[key] || 0;
+          const selected = locked ? carried === key : state.selectedItem === key;
+          const selectable = !locked && count > 0;
+
+          return `
+            <article class="item-card ${selected ? "selected" : ""} ${selectable || selected ? "" : "disabled"}"
+              data-item-key="${key}" role="button" tabindex="${selectable ? "0" : "-1"}">
+              <div class="item-head">
+                <div class="item-icon">${item.icon}</div>
+                <span class="item-count">보유 ${count}</span>
+              </div>
+              <div class="item-name">${item.name}${selected ? " · 선택됨" : ""}</div>
+              <div class="item-desc">${item.description}</div>
+              <button class="item-buy secondary" data-buy-key="${key}" ${locked || state.gold < item.price ? "disabled" : ""}>
+                구매 · ${item.price}G
+              </button>
+            </article>
+          `;
+        }).join("");
+
+        els.itemInventory.querySelectorAll("[data-item-key]").forEach(card => {
+          card.addEventListener("click", event => {
+            if (event.target.closest("[data-buy-key]")) return;
+            selectItem(card.dataset.itemKey);
+          });
+          card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectItem(card.dataset.itemKey);
+            }
+          });
+        });
+
+        els.itemInventory.querySelectorAll("[data-buy-key]").forEach(button => {
+          button.addEventListener("click", event => {
+            event.stopPropagation();
+            buyItem(button.dataset.buyKey);
+          });
+        });
+
+        if (locked) {
+          els.carryNote.innerHTML = carried
+            ? `현재 원정 도구: <strong>${ITEM_DEFS[carried].icon} ${ITEM_DEFS[carried].name}</strong>`
+            : "현재 원정에는 도구를 가져가지 않았습니다.";
+        } else if (state.selectedItem) {
+          els.carryNote.innerHTML = `다음 원정 도구: <strong>${ITEM_DEFS[state.selectedItem].icon} ${ITEM_DEFS[state.selectedItem].name}</strong> · 다시 누르면 선택 해제`;
+        } else {
+          els.carryNote.textContent = "선택된 도구가 없습니다. 도구는 실제 사용되거나 락픽 효과가 발동할 때 수량이 감소합니다.";
+        }
+      }
+
       function renderGraveyard() {
         const dead = state.characters.filter(c => !c.alive);
         els.graveyard.innerHTML = dead.length
@@ -1166,26 +1581,77 @@
             ${dungeon.encounters.map((_, index) => {
               let cls = "";
               if (index < dungeon.index || (index === dungeon.index && dungeon.phase === "resolved")) cls = "done";
-              if (index === dungeon.index && dungeon.phase === "ready") cls = "current";
+              if (index === dungeon.index && ["ready", "rolled"].includes(dungeon.phase)) cls = "current";
               return `<div class="progress-step ${cls}">${index + 1}차 인카운터</div>`;
             }).join("")}
           </div>
         `;
       }
 
+      function renderDungeonTool(dungeon) {
+        if (!dungeon.carriedItem) {
+          return '<div class="tool-banner"><span>원정 도구</span><strong>없음</strong></div>';
+        }
+
+        const item = ITEM_DEFS[dungeon.carriedItem];
+        const status = dungeon.itemUsed
+          ? "사용 완료"
+          : dungeon.carriedItem === "lockpick"
+            ? "던전 완료 시 자동 발동"
+            : "사용 가능";
+
+        let actions = "";
+
+        if (
+          dungeon.phase === "ready" &&
+          dungeon.carriedItem === "bandage" &&
+          !dungeon.itemUsed
+        ) {
+          const injured = alivePartyMembers().filter(c => c.injured);
+          actions += `
+            <div class="tool-actions">
+              <button id="bandageBtn" class="secondary" ${injured.length && state.inventory.bandage > 0 ? "" : "disabled"}>
+                붕대 사용
+              </button>
+            </div>
+          `;
+
+          if (dungeon.bandageTargetMode && injured.length) {
+            actions += `
+              <div class="target-list">
+                ${injured.map(c => `<button data-bandage-target="${c.id}">${c.icon} ${c.name} 치료</button>`).join("")}
+              </div>
+            `;
+          }
+        }
+
+        return `
+          <div class="tool-banner">
+            <span>${item.icon} ${item.name}</span>
+            <strong>${status}</strong>
+          </div>
+          ${actions}
+        `;
+      }
+
       function renderDungeon() {
         const locked = Boolean(state.dungeon);
-        els.drawOneBtn.disabled = locked;
-        els.drawFourBtn.disabled = locked;
+        els.drawOneBtn.disabled = locked || state.gold < GACHA_COST;
+        els.drawFourBtn.disabled = locked || state.gold < GACHA_COST * 4;
         els.autoPartyBtn.disabled = locked;
         els.clearPartyBtn.disabled = locked;
 
         if (!state.dungeon) {
           const partyReady = alivePartyMembers().length === 4;
+          const selectedText = state.selectedItem
+            ? `${ITEM_DEFS[state.selectedItem].icon} ${ITEM_DEFS[state.selectedItem].name} 지참`
+            : "도구 없음";
+
           els.dungeonArea.innerHTML = `
             <div class="empty">
               파티를 4명 편성한 뒤 원정을 시작하세요.<br>
-              성공한 인카운터의 골드는 누적되며, 던전 종료 시 부상 페널티가 적용됩니다.
+              성공한 인카운터의 골드는 누적되며, 던전 종료 시 부상 페널티가 적용됩니다.<br>
+              다음 원정: ${selectedText}
             </div>
             <button id="startDungeonBtn" class="primary-wide" ${partyReady ? "" : "disabled"}>
               ${partyReady ? "던전 탐험 시작" : `파티원 ${alivePartyMembers().length}/4`}
@@ -1252,9 +1718,24 @@
 
         const noSurvivors = alivePartyMembers().length === 0;
         const isLast = dungeon.index >= dungeon.encounters.length - 1;
-        const buttonText = dungeon.phase === "ready"
-          ? "파티 주사위 굴리기"
-          : (noSurvivors || isLast ? "던전 정산하기" : "다음 인카운터로");
+
+        let actionHtml = "";
+        if (dungeon.phase === "ready") {
+          actionHtml = '<button id="rollBtn" class="primary-wide">파티 주사위 굴리기</button>';
+        } else if (dungeon.phase === "rolled") {
+          actionHtml = `
+            <div class="tool-actions">
+              <button id="ropeBtn">🪢 밧줄 사용 · 전체 재굴림</button>
+              <button id="confirmRollBtn" class="secondary">현재 결과 확정</button>
+            </div>
+          `;
+        } else {
+          actionHtml = `
+            <button id="advanceBtn" class="primary-wide">
+              ${noSurvivors || isLast ? "던전 정산하기" : "다음 인카운터로"}
+            </button>
+          `;
+        }
 
         els.dungeonArea.innerHTML = `
           ${progressHtml(dungeon)}
@@ -1264,6 +1745,7 @@
             <p class="panel-subtitle">
               살아 있는 파티원 전원이 주사위를 굴립니다. 부상자는 결과에 ±1 보정을 받습니다.
             </p>
+            ${renderDungeonTool(dungeon)}
             <div class="requirement">
               <span>성공 조건</span>
               <strong>합계 ${conditionText}</strong>
@@ -1273,15 +1755,26 @@
               <span>성공 보상 ${encounter.reward}G · 누적 ${dungeon.earnedGold}G</span>
             </div>
             ${rollsHtml}
+            ${dungeon.phase === "rolled" ? `
+              <div class="result-banner ${(
+                encounter.type === "gte" ? total >= encounter.target : total <= encounter.target
+              ) ? "success" : "failure"}">
+                임시 결과 · 주사위 합계 ${total} · 밧줄을 사용할지 선택하세요
+              </div>
+            ` : ""}
             ${resultHtml}
           </div>
-          <button id="dungeonActionBtn" class="primary-wide">${buttonText}</button>
+          ${actionHtml}
         `;
 
-        const actionBtn = document.getElementById("dungeonActionBtn");
-        actionBtn.addEventListener("click", () => {
-          if (state.dungeon?.phase === "ready") rollEncounter();
-          else advanceDungeon();
+        document.getElementById("rollBtn")?.addEventListener("click", rollEncounter);
+        document.getElementById("ropeBtn")?.addEventListener("click", useRope);
+        document.getElementById("confirmRollBtn")?.addEventListener("click", confirmRolledResult);
+        document.getElementById("advanceBtn")?.addEventListener("click", advanceDungeon);
+        document.getElementById("bandageBtn")?.addEventListener("click", toggleBandageTargets);
+
+        document.querySelectorAll("[data-bandage-target]").forEach(button => {
+          button.addEventListener("click", () => useBandage(button.dataset.bandageTarget));
         });
       }
 
@@ -1298,8 +1791,13 @@
           </div>
           <div class="summary">
             <div><span>인카운터 누적</span><strong>${s.earnedGold}G</strong></div>
+            <div><span>락픽 적용 후</span><strong>${s.lockpickUsed ? `${s.boostedGold}G` : "미사용"}</strong></div>
             <div><span>생존 부상자</span><strong>${s.injuredCount}명</strong></div>
-            <div><span>최종 배율</span><strong>${s.partyWiped ? "0%" : `${Math.round(s.multiplier * 100)}%`}</strong></div>
+          </div>
+          <div class="summary">
+            <div><span>부상 배율</span><strong>${s.partyWiped ? "0%" : `${Math.round(s.multiplier * 100)}%`}</strong></div>
+            <div><span>생존 인원</span><strong>${s.survivors}명</strong></div>
+            <div><span>최종 보상</span><strong>${s.finalGold}G</strong></div>
           </div>
         `;
       }
@@ -1323,9 +1821,15 @@
           const character = state.characters.find(c => c.id === id);
           return character && character.alive;
         });
+
+        if (state.selectedItem && state.inventory[state.selectedItem] <= 0 && !state.dungeon) {
+          state.selectedItem = null;
+        }
+
         renderHeader();
         renderRoster();
         renderParty();
+        renderItems();
         renderGraveyard();
         renderDungeon();
         renderLastSummary();
@@ -1338,6 +1842,7 @@
       els.clearPartyBtn.addEventListener("click", clearParty);
       els.resetBtn.addEventListener("click", resetGame);
 
+      save();
       render();
     })();
   </script>
