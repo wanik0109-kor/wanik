@@ -1,2268 +1,3866 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#17111f">
-<title>길드 마스터 시뮬레이터</title>
-<style>
-:root {
---bg: #120d18;
---bg-2: #1b1324;
---panel: rgba(31, 23, 42, 0.96);
---panel-2: rgba(43, 31, 57, 0.92);
---panel-3: rgba(59, 42, 76, 0.78);
---line: rgba(255,255,255,.11);
---line-strong: rgba(226, 185, 96, .45);
---text: #f5f0fa;
---muted: #b9abc6;
---accent: #e2b960;
---accent-2: #8fdda7;
---danger: #ef7f83;
---injury: #f2b46f;
---trauma: #c593ed;
---blue: #8eb8ff;
---shadow: 0 18px 45px rgba(0,0,0,.34);
---radius: 18px;
---topbar-h: 62px;
-}
-* { box-sizing: border-box; }
-html, body {
-width: 100%;
-min-height: 100%;
-margin: 0;
-color: var(--text);
-background:
-radial-gradient(circle at 18% 5%, rgba(126, 79, 166, .23), transparent 33%),
-radial-gradient(circle at 85% 95%, rgba(191, 137, 58, .13), transparent 34%),
-var(--bg);
-font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-body {
-overflow: hidden;
-overscroll-behavior: none;
-}
-button {
-border: 0;
-color: inherit;
-font: inherit;
-cursor: pointer;
--webkit-tap-highlight-color: transparent;
-}
-button:disabled {
-cursor: not-allowed;
-opacity: .38;
-filter: grayscale(.25);
-}
-strong { font-weight: 900; }
-.app {
-min-height: 100dvh;
-display: grid;
-grid-template-rows: var(--topbar-h) minmax(0, 1fr);
-}
-.topbar {
-position: relative;
-z-index: 20;
-display: grid;
-grid-template-columns: minmax(220px, 1fr) auto minmax(320px, 1fr);
-align-items: center;
-gap: 16px;
-height: var(--topbar-h);
-padding: 0 18px;
-border-bottom: 1px solid var(--line);
-background: rgba(15, 10, 21, .91);
-backdrop-filter: blur(14px);
-box-shadow: 0 10px 25px rgba(0,0,0,.18);
-}
-.brand {
-min-width: 0;
-display: flex;
-align-items: center;
-gap: 10px;
-}
-.brand-mark {
-display: grid;
-place-items: center;
-width: 38px;
-height: 38px;
-flex: 0 0 auto;
-border-radius: 12px;
-color: #25180b;
-background: linear-gradient(135deg, #f4d68b, #c58f35);
-box-shadow: inset 0 1px rgba(255,255,255,.55), 0 8px 20px rgba(226,185,96,.18);
-font-size: 1.2rem;
-}
-.brand-copy { min-width: 0; }
-.brand-copy h1 {
-overflow: hidden;
-margin: 0;
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: 1.02rem;
-letter-spacing: -.02em;
-}
-.brand-copy p {
-overflow: hidden;
-margin: 2px 0 0;
-color: var(--muted);
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .68rem;
-}
-.main-nav {
-display: flex;
-align-items: center;
-gap: 7px;
-padding: 5px;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-}
-.nav-btn {
-min-height: 38px;
-padding: 0 16px;
-border-radius: 10px;
-color: var(--muted);
-background: transparent;
-font-size: .8rem;
-font-weight: 850;
-}
-.nav-btn.active {
-color: #241708;
-background: linear-gradient(135deg, #f1d17e, #c8943c);
-box-shadow: 0 6px 16px rgba(226,185,96,.17);
-}
-.nav-btn.locked { opacity: .3; }
-.resources {
-display: flex;
-justify-content: flex-end;
-align-items: center;
-gap: 8px;
-min-width: 0;
-}
-.resource-pill {
-display: flex;
-align-items: center;
-gap: 7px;
-min-height: 38px;
-padding: 0 11px;
-border: 1px solid var(--line);
-border-radius: 12px;
-background: rgba(255,255,255,.035);
-white-space: nowrap;
-}
-.resource-pill span {
-color: var(--muted);
-font-size: .67rem;
-}
-.resource-pill b {
-color: var(--text);
-font-size: .82rem;
-}
-.resource-pill.gold b { color: #f2cf79; }
-.resource-pill.dead b { color: #ffaaa9; }
-.screen-shell {
-min-height: 0;
-overflow: hidden;
-}
-.game-screen {
-height: 100%;
-overflow: auto;
-padding: 16px;
-scrollbar-width: thin;
-scrollbar-color: rgba(255,255,255,.18) transparent;
-}
-.game-screen::-webkit-scrollbar { width: 8px; height: 8px; }
-.game-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 999px; }
-.page-grid {
-min-height: 100%;
-display: grid;
-gap: 14px;
-}
-.home-grid { grid-template-columns: minmax(330px, .92fr) minmax(430px, 1.35fr); }
-.party-grid { grid-template-columns: minmax(520px, 1.55fr) minmax(330px, .85fr); }
-.adventure-grid { grid-template-columns: minmax(500px, 1.45fr) minmax(320px, .8fr); }
-.result-grid { grid-template-columns: minmax(440px, 1fr) minmax(420px, 1fr); }
-.column-stack {
-min-height: 0;
-display: grid;
-gap: 14px;
-}
-.home-left { grid-template-rows: auto minmax(0, 1fr); }
-.home-right { grid-template-rows: auto minmax(0, 1fr); }
-.party-right { grid-template-rows: auto auto minmax(0, 1fr) auto; }
-.adventure-right { grid-template-rows: auto minmax(0, 1fr) auto; }
-.result-left { grid-template-rows: auto minmax(0, 1fr) auto; }
-.panel {
-min-width: 0;
-min-height: 0;
-padding: 15px;
-border: 1px solid var(--line);
-border-radius: var(--radius);
-background: linear-gradient(160deg, rgba(41,30,54,.96), rgba(27,20,37,.96));
-box-shadow: var(--shadow);
-}
-.panel.scroll { overflow: auto; }
-.panel-header {
-display: flex;
-align-items: flex-start;
-justify-content: space-between;
-gap: 12px;
-margin-bottom: 12px;
-}
-.panel-title {
-margin: 0;
-font-size: .97rem;
-letter-spacing: -.02em;
-}
-.panel-subtitle {
-margin: 4px 0 0;
-color: var(--muted);
-font-size: .72rem;
-line-height: 1.5;
-}
-.hero-panel {
-position: relative;
-overflow: hidden;
-padding: 22px;
-background:
-linear-gradient(100deg, rgba(34,23,45,.98), rgba(47,31,62,.89)),
-radial-gradient(circle at 90% 10%, rgba(226,185,96,.28), transparent 45%);
-}
-.hero-panel::after {
-content: "⚔";
-position: absolute;
-right: 22px;
-bottom: -24px;
-color: rgba(255,255,255,.045);
-font-size: 9rem;
-transform: rotate(-12deg);
-pointer-events: none;
-}
-.hero-label {
-display: inline-flex;
-align-items: center;
-min-height: 25px;
-padding: 0 9px;
-border: 1px solid rgba(226,185,96,.34);
-border-radius: 999px;
-color: #f2d994;
-background: rgba(226,185,96,.08);
-font-size: .68rem;
-font-weight: 900;
-}
-.hero-panel h2 {
-max-width: 620px;
-margin: 13px 0 7px;
-font-size: clamp(1.35rem, 3vw, 2.15rem);
-line-height: 1.15;
-letter-spacing: -.045em;
-}
-.hero-panel p {
-max-width: 620px;
-margin: 0;
-color: var(--muted);
-font-size: .78rem;
-line-height: 1.65;
-}
-.hero-actions,
-.button-row,
-.inline-actions {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-}
-.hero-actions { margin-top: 17px; }
-.btn {
-display: inline-flex;
-align-items: center;
-justify-content: center;
-gap: 7px;
-min-height: 42px;
-padding: 0 15px;
-border: 1px solid transparent;
-border-radius: 12px;
-font-size: .78rem;
-font-weight: 900;
-transition: transform .12s ease, border-color .12s ease, filter .12s ease;
-}
-.btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
-.btn:active:not(:disabled) { transform: translateY(0); }
-.btn.primary {
-color: #251708;
-background: linear-gradient(135deg, #f0cf76, #c58d34);
-box-shadow: 0 8px 18px rgba(226,185,96,.16);
-}
-.btn.secondary {
-border-color: var(--line);
-background: rgba(255,255,255,.055);
-}
-.btn.blue {
-color: #101827;
-background: linear-gradient(135deg, #b9d1ff, #78a8f8);
-}
-.btn.danger {
-color: #fff;
-border-color: rgba(239,127,131,.28);
-background: rgba(164,59,67,.55);
-}
-.btn.wide { width: 100%; min-height: 48px; }
-.btn.small { min-height: 34px; padding: 0 10px; font-size: .7rem; }
-.stats-grid {
-display: grid;
-grid-template-columns: repeat(4, minmax(0, 1fr));
-gap: 9px;
-}
-.stat-card {
-min-width: 0;
-padding: 13px;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-}
-.stat-card span {
-display: block;
-color: var(--muted);
-font-size: .65rem;
-}
-.stat-card strong {
-display: block;
-overflow: hidden;
-margin-top: 5px;
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: 1rem;
-}
-.stat-card.gold strong { color: #f3d17c; }
-.stat-card.safe strong { color: var(--accent-2); }
-.stat-card.danger strong { color: #ffaaa9; }
-.stat-card.trauma strong { color: #d9a7fa; }
-.section-label {
-margin: 0 0 9px;
-color: #ddcfeb;
-font-size: .72rem;
-font-weight: 900;
-letter-spacing: .02em;
-text-transform: uppercase;
-}
-.shop-grid,
-.difficulty-grid,
-.party-slots,
-.roll-grid,
-.outcome-grid,
-.summary-grid {
-display: grid;
-gap: 9px;
-}
-.shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.difficulty-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.party-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.roll-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.outcome-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.shop-card,
-.difficulty-card,
-.party-slot,
-.roll-card,
-.outcome-card,
-.summary-card,
-.mini-character,
-.report-row {
-min-width: 0;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-}
-.shop-card {
-display: grid;
-grid-template-rows: auto auto minmax(34px, 1fr) auto;
-gap: 5px;
-padding: 11px;
-}
-.shop-head,
-.card-top,
-.line-between {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 9px;
-min-width: 0;
-}
-.shop-icon { font-size: 1.4rem; }
-.shop-count,
-.badge {
-display: inline-flex;
-align-items: center;
-min-height: 23px;
-padding: 0 7px;
-border-radius: 999px;
-color: #d9cee5;
-background: rgba(255,255,255,.07);
-font-size: .64rem;
-font-weight: 900;
-white-space: nowrap;
-}
-.shop-name { font-size: .79rem; font-weight: 900; }
-.shop-desc { color: var(--muted); font-size: .64rem; line-height: 1.45; }
-.activity-list,
-.grave-list,
-.report-list {
-display: grid;
-gap: 7px;
-}
-.activity-row {
-display: grid;
-grid-template-columns: 72px minmax(0, 1fr);
-gap: 10px;
-padding: 9px 10px;
-border: 1px solid rgba(255,255,255,.07);
-border-radius: 11px;
-background: rgba(255,255,255,.025);
-font-size: .69rem;
-line-height: 1.45;
-}
-.activity-row time { color: #8f809d; }
-.empty-state {
-display: grid;
-place-items: center;
-min-height: 130px;
-padding: 20px;
-border: 1px dashed rgba(255,255,255,.14);
-border-radius: 14px;
-color: var(--muted);
-text-align: center;
-font-size: .75rem;
-line-height: 1.6;
-}
-.last-result {
-display: grid;
-grid-template-columns: auto minmax(0, 1fr) auto;
-align-items: center;
-gap: 12px;
-padding: 12px;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-}
-.result-emblem {
-display: grid;
-place-items: center;
-width: 44px;
-height: 44px;
-border-radius: 13px;
-background: rgba(255,255,255,.07);
-font-size: 1.3rem;
-}
-.last-result h3 { margin: 0; font-size: .84rem; }
-.last-result p { margin: 4px 0 0; color: var(--muted); font-size: .68rem; }
-.last-result strong { color: #f3d17c; font-size: .94rem; white-space: nowrap; }
-.roster-panel {
-display: grid;
-grid-template-rows: auto minmax(0, 1fr);
-overflow: hidden;
-}
-.roster-grid {
-min-height: 0;
-overflow: auto;
-display: grid;
-grid-template-columns: repeat(3, minmax(0, 1fr));
-align-content: start;
-gap: 9px;
-padding-right: 3px;
-}
-.character-card {
-position: relative;
-min-width: 0;
-padding: 11px;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-cursor: pointer;
-user-select: none;
-transition: transform .12s ease, border-color .12s ease, background .12s ease;
-}
-.character-card:hover { transform: translateY(-1px); border-color: rgba(226,185,96,.37); }
-.character-card.selected {
-border-color: var(--accent);
-background: linear-gradient(150deg, rgba(226,185,96,.17), rgba(255,255,255,.04));
-box-shadow: inset 0 0 0 1px rgba(226,185,96,.15);
-}
-.character-card .avatar,
-.party-avatar {
-display: grid;
-place-items: center;
-width: 34px;
-height: 34px;
-flex: 0 0 auto;
-border-radius: 10px;
-background: rgba(255,255,255,.075);
-font-size: 1.05rem;
-}
-.character-card h3 {
-overflow: hidden;
-margin: 9px 0 2px;
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .78rem;
-}
-.character-card .job-line {
-overflow: hidden;
-color: var(--muted);
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .65rem;
-}
-.chip-row {
-display: flex;
-flex-wrap: wrap;
-gap: 4px;
-margin-top: 7px;
-}
-.chip {
-display: inline-flex;
-align-items: center;
-min-height: 20px;
-padding: 0 6px;
-border: 1px solid rgba(255,255,255,.07);
-border-radius: 999px;
-color: #d3c6df;
-background: rgba(255,255,255,.04);
-font-size: .58rem;
-font-weight: 800;
-}
-.chip.trauma { color: #e3bcff; border-color: rgba(197,147,237,.26); background: rgba(130,74,170,.18); }
-.chip.injury { color: #ffd1a0; border-color: rgba(242,180,111,.27); background: rgba(166,104,43,.18); }
-.chip.safe { color: #b9f0c9; }
-.personality {
-overflow: hidden;
-margin-top: 7px;
-color: #dcb8ef;
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .62rem;
-}
-.success-count {
-margin-top: 7px;
-color: #e9dba4;
-font-size: .61rem;
-font-weight: 850;
-}
-.difficulty-card {
-padding: 11px;
-color: var(--text);
-text-align: left;
-}
-.difficulty-card.selected {
-color: #261809;
-border-color: var(--accent);
-background: linear-gradient(135deg, #efd07e, #c58f38);
-}
-.difficulty-card strong { display: block; font-size: .76rem; }
-.difficulty-card span { display: block; margin-top: 3px; opacity: .78; font-size: .61rem; line-height: 1.4; }
-.party-slot {
-min-height: 94px;
-padding: 10px;
-}
-.party-slot.empty {
-display: grid;
-place-items: center;
-border-style: dashed;
-color: #8f809d;
-text-align: center;
-font-size: .68rem;
-}
-.party-slot h3 {
-overflow: hidden;
-margin: 0;
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .74rem;
-}
-.party-slot p {
-overflow: hidden;
-margin: 4px 0 0;
-color: var(--muted);
-white-space: nowrap;
-text-overflow: ellipsis;
-font-size: .61rem;
-}
-.party-slot .status-line { color: #decbe8; }
-.carry-list {
-display: grid;
-gap: 7px;
-}
-.carry-option {
-display: grid;
-grid-template-columns: 36px minmax(0, 1fr) auto;
-align-items: center;
-gap: 9px;
-padding: 9px;
-border: 1px solid var(--line);
-border-radius: 12px;
-background: rgba(255,255,255,.035);
-text-align: left;
-}
-.carry-option.selected { border-color: var(--accent); background: rgba(226,185,96,.1); }
-.carry-option .item-emoji { font-size: 1.25rem; text-align: center; }
-.carry-option strong { display: block; font-size: .72rem; }
-.carry-option span { display: block; margin-top: 2px; color: var(--muted); font-size: .59rem; }
-.prep-summary {
-display: grid;
-grid-template-columns: repeat(3, minmax(0, 1fr));
-gap: 7px;
-}
-.prep-summary div {
-min-width: 0;
-padding: 8px;
-border-radius: 11px;
-background: rgba(255,255,255,.04);
-}
-.prep-summary span { display: block; color: var(--muted); font-size: .58rem; }
-.prep-summary strong { display: block; overflow: hidden; margin-top: 3px; white-space: nowrap; text-overflow: ellipsis; font-size: .72rem; }
-.progress-track {
-display: grid;
-grid-template-columns: repeat(3, minmax(0, 1fr));
-gap: 7px;
-margin-bottom: 12px;
-}
-.progress-step {
-min-width: 0;
-padding: 8px;
-border: 1px solid var(--line);
-border-radius: 11px;
-color: #9384a1;
-background: rgba(255,255,255,.025);
-text-align: center;
-font-size: .62rem;
-font-weight: 900;
-}
-.progress-step.current { color: #251708; border-color: var(--accent); background: var(--accent); }
-.progress-step.done { color: #c4f0d0; border-color: rgba(143,221,167,.35); background: rgba(75,146,94,.18); }
-.encounter-panel {
-position: relative;
-overflow: hidden;
-display: grid;
-grid-template-rows: auto auto minmax(0, 1fr) auto;
-min-height: 100%;
-padding: 18px;
-}
-.encounter-panel::before {
-content: "";
-position: absolute;
-inset: 0;
-pointer-events: none;
-background: radial-gradient(circle at 85% 5%, rgba(226,185,96,.12), transparent 34%);
-}
-.encounter-header {
-position: relative;
-display: flex;
-justify-content: space-between;
-gap: 12px;
-align-items: flex-start;
-}
-.encounter-kicker { color: var(--accent); font-size: .62rem; font-weight: 950; letter-spacing: .09em; }
-.encounter-header h2 { margin: 5px 0 0; font-size: 1.22rem; letter-spacing: -.035em; }
-.difficulty-badge {
-display: inline-flex;
-align-items: center;
-min-height: 28px;
-padding: 0 10px;
-border-radius: 999px;
-color: #261708;
-background: var(--accent);
-font-size: .66rem;
-font-weight: 950;
-white-space: nowrap;
-}
-.condition-row {
-position: relative;
-display: grid;
-grid-template-columns: repeat(3, minmax(0, 1fr));
-gap: 8px;
-margin: 13px 0;
-}
-.condition-box {
-padding: 10px;
-border: 1px solid var(--line);
-border-radius: 12px;
-background: rgba(255,255,255,.035);
-}
-.condition-box span { display: block; color: var(--muted); font-size: .59rem; }
-.condition-box strong { display: block; margin-top: 4px; font-size: .82rem; }
-.condition-box.target strong { color: #f1d17c; font-size: 1.02rem; }
-.encounter-stage {
-position: relative;
-min-height: 0;
-overflow: auto;
-padding-right: 3px;
-}
-.roll-card {
-display: grid;
-grid-template-columns: minmax(0, 1fr) 42px;
-gap: 8px;
-align-items: center;
-padding: 9px;
-}
-.roll-card h3 { overflow: hidden; margin: 0; white-space: nowrap; text-overflow: ellipsis; font-size: .69rem; }
-.roll-card p { overflow: hidden; margin: 3px 0 0; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; font-size: .57rem; }
-.die-face {
-display: grid;
-place-items: center;
-width: 42px;
-height: 42px;
-border: 1px solid rgba(255,255,255,.14);
-border-radius: 11px;
-color: #251708;
-background: #f3dfaa;
-box-shadow: inset 0 1px rgba(255,255,255,.65);
-font-size: 1.1rem;
-font-weight: 950;
-}
-.die-face.skipped { color: #e4c8f7; background: rgba(130,74,170,.28); }
-.result-banner {
-margin-top: 10px;
-padding: 10px 12px;
-border-radius: 12px;
-font-size: .72rem;
-font-weight: 950;
-line-height: 1.45;
-}
-.result-banner.success { color: #d7f7df; border: 1px solid rgba(143,221,167,.3); background: rgba(68,139,87,.22); }
-.result-banner.failure { color: #ffd3d3; border: 1px solid rgba(239,127,131,.3); background: rgba(155,64,70,.22); }
-.result-banner.preview { color: #f7e8bd; border: 1px solid rgba(226,185,96,.28); background: rgba(160,111,38,.18); }
-.survival-list { display: grid; gap: 6px; margin-top: 9px; }
-.survival-row {
-display: flex;
-justify-content: space-between;
-gap: 9px;
-padding: 7px 9px;
-border-radius: 10px;
-background: rgba(255,255,255,.035);
-font-size: .64rem;
-}
-.status-dead { color: #ffaaa9; }
-.status-trauma { color: #dda9ff; }
-.status-injured { color: #ffd19b; }
-.status-safe { color: #bcefc9; }
-.adventure-actions {
-position: relative;
-display: grid;
-grid-template-columns: repeat(2, minmax(0, 1fr));
-gap: 8px;
-margin-top: 12px;
-}
-.adventure-actions.single { grid-template-columns: 1fr; }
-.party-mini-list { display: grid; gap: 7px; }
-.mini-character {
-display: grid;
-grid-template-columns: 34px minmax(0, 1fr) auto;
-align-items: center;
-gap: 9px;
-padding: 9px;
-}
-.mini-character.dead { opacity: .48; filter: grayscale(.6); }
-.mini-character h3 { overflow: hidden; margin: 0; white-space: nowrap; text-overflow: ellipsis; font-size: .68rem; }
-.mini-character p { overflow: hidden; margin: 3px 0 0; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; font-size: .57rem; }
-.tool-panel {
-padding: 12px;
-border: 1px solid var(--line);
-border-radius: 14px;
-background: rgba(255,255,255,.035);
-}
-.tool-panel h3 { margin: 0; font-size: .76rem; }
-.tool-panel p { margin: 4px 0 0; color: var(--muted); font-size: .62rem; line-height: 1.5; }
-.bandage-targets { display: grid; gap: 6px; margin-top: 9px; }
-.result-hero {
-padding: 21px;
-border: 1px solid var(--line);
-border-radius: var(--radius);
-background: linear-gradient(140deg, rgba(50,35,65,.97), rgba(28,20,38,.97));
-box-shadow: var(--shadow);
-}
-.result-hero.success { border-color: rgba(143,221,167,.32); }
-.result-hero.failure { border-color: rgba(239,127,131,.32); }
-.result-hero .big-icon { font-size: 2.15rem; }
-.result-hero h2 { margin: 9px 0 5px; font-size: 1.45rem; }
-.result-hero p { margin: 0; color: var(--muted); font-size: .73rem; line-height: 1.55; }
-.summary-card { padding: 10px; }
-.summary-card span { display: block; color: var(--muted); font-size: .58rem; }
-.summary-card strong { display: block; margin-top: 4px; font-size: .78rem; }
-.outcome-card { padding: 10px; }
-.outcome-card h3 { overflow: hidden; margin: 0; white-space: nowrap; text-overflow: ellipsis; font-size: .7rem; }
-.outcome-card p { overflow: hidden; margin: 4px 0 0; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; font-size: .58rem; }
-.report-row {
-display: grid;
-grid-template-columns: 32px minmax(0, 1fr) auto;
-align-items: center;
-gap: 9px;
-padding: 9px;
-}
-.report-index {
-display: grid;
-place-items: center;
-width: 32px;
-height: 32px;
-border-radius: 9px;
-background: rgba(255,255,255,.07);
-font-size: .66rem;
-font-weight: 950;
-}
-.report-row h3 { overflow: hidden; margin: 0; white-space: nowrap; text-overflow: ellipsis; font-size: .68rem; }
-.report-row p { margin: 3px 0 0; color: var(--muted); font-size: .58rem; }
-.report-result { font-size: .65rem; font-weight: 950; white-space: nowrap; }
-.report-result.success { color: #bcefc9; }
-.report-result.failure { color: #ffb1b0; }
-.grave-row {
-padding: 9px 10px;
-border: 1px solid rgba(239,127,131,.14);
-border-radius: 11px;
-background: rgba(109,47,54,.11);
-font-size: .65rem;
-line-height: 1.45;
-}
-.orientation-overlay {
-display: none;
-position: fixed;
-inset: 0;
-z-index: 1000;
-place-items: center;
-padding: 30px;
-background: #120d18;
-text-align: center;
-}
-.orientation-card {
-max-width: 360px;
-padding: 28px;
-border: 1px solid var(--line);
-border-radius: 20px;
-background: var(--panel);
-box-shadow: var(--shadow);
-}
-.orientation-card .phone { display: block; margin-bottom: 13px; font-size: 2.6rem; transform: rotate(90deg); }
-.orientation-card h2 { margin: 0; font-size: 1.15rem; }
-.orientation-card p { margin: 9px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.6; }
-@media (max-width: 1180px) {
-.topbar { grid-template-columns: minmax(190px, 1fr) auto auto; }
-.brand-copy p { display: none; }
-.home-grid { grid-template-columns: minmax(310px, .9fr) minmax(390px, 1.2fr); }
-.party-grid { grid-template-columns: minmax(470px, 1.4fr) minmax(310px, .86fr); }
-.roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 920px) and (orientation: landscape) {
-:root { --topbar-h: 52px; }
-.topbar { gap: 8px; padding: 0 9px; grid-template-columns: 170px auto 1fr; }
-.brand-mark { width: 32px; height: 32px; border-radius: 10px; }
-.brand-copy h1 { font-size: .82rem; }
-.main-nav { gap: 3px; padding: 3px; }
-.nav-btn { min-height: 32px; padding: 0 10px; font-size: .67rem; }
-.resource-pill { min-height: 32px; padding: 0 8px; }
-.resource-pill span { display: none; }
-.resource-pill b { font-size: .69rem; }
-.game-screen { padding: 9px; }
-.page-grid, .column-stack { gap: 9px; }
-.panel { padding: 10px; border-radius: 14px; }
-.panel-header { margin-bottom: 8px; }
-.hero-panel { padding: 14px; }
-.hero-panel h2 { margin: 8px 0 4px; font-size: 1.16rem; }
-.hero-panel p { font-size: .65rem; line-height: 1.45; }
-.hero-actions { margin-top: 10px; }
-.btn { min-height: 35px; padding: 0 10px; border-radius: 10px; font-size: .66rem; }
-.btn.wide { min-height: 39px; }
-.stats-grid { gap: 6px; }
-.stat-card { padding: 8px; }
-.stat-card strong { font-size: .78rem; }
-.shop-grid { gap: 6px; }
-.shop-card { padding: 8px; }
-.shop-desc { display: none; }
-.home-grid { grid-template-columns: minmax(290px, .88fr) minmax(390px, 1.2fr); }
-.party-grid { grid-template-columns: minmax(430px, 1.45fr) minmax(290px, .9fr); }
-.adventure-grid { grid-template-columns: minmax(450px, 1.5fr) minmax(260px, .8fr); }
-.result-grid { grid-template-columns: minmax(380px, 1fr) minmax(350px, 1fr); }
-.roster-grid { gap: 6px; }
-.character-card { padding: 8px; border-radius: 11px; }
-.character-card .avatar { width: 29px; height: 29px; }
-.character-card h3 { margin-top: 6px; font-size: .67rem; }
-.chip-row { margin-top: 5px; }
-.personality, .success-count { margin-top: 5px; }
-.party-slot { min-height: 74px; padding: 8px; }
-.party-slot p:nth-of-type(2) { display: none; }
-.condition-row { margin: 9px 0; }
-.encounter-panel { padding: 12px; }
-.encounter-header h2 { font-size: .96rem; }
-.roll-grid { gap: 6px; }
-.roll-card { padding: 7px; grid-template-columns: minmax(0,1fr) 35px; }
-.die-face { width: 35px; height: 35px; }
-.mini-character { padding: 7px; }
-.tool-panel { padding: 9px; }
-.result-hero { padding: 14px; }
-}
-@media (max-width: 780px) and (orientation: landscape) {
-.home-grid { grid-template-columns: minmax(0, .88fr) minmax(0, 1.2fr); }
-.party-grid { grid-template-columns: minmax(0, 1.45fr) minmax(0, .9fr); }
-.adventure-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, .8fr); }
-.result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.topbar { grid-template-columns: 150px auto minmax(0, 1fr); }
-.resource-pill { padding: 0 6px; }
-.brand-copy h1 { font-size: .75rem; }
-}
-@media (orientation: portrait) and (max-width: 900px) {
-.orientation-overlay { display: grid; }
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#120d18">
+  <title>길드 마스터 시뮬레이터</title>
 
-/* =========================================================
-   모바일 가로 화면 좌우 밀림 방지
-   ========================================================= */
-html,
-body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-body { position: relative; }
-.app,
-.topbar,
-.screen-shell,
-.game-screen,
-.page-grid,
-.column-stack,
-.panel,
-.home-grid,
-.party-grid,
-.adventure-grid,
-.result-grid {
-  min-width: 0;
-  max-width: 100%;
-}
-.app,
-.topbar,
-.screen-shell,
-.game-screen,
-.page-grid { width: 100%; }
-.app {
-  height: 100dvh;
-  overflow: hidden;
-}
-.screen-shell { overflow: hidden; }
-.game-screen {
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-x: none;
-  touch-action: pan-y;
-}
-.page-grid > *,
-.column-stack > *,
-.stats-grid > *,
-.shop-grid > *,
-.difficulty-grid > *,
-.party-slots > *,
-.roll-grid > *,
-.outcome-grid > *,
-.summary-grid > * {
-  min-width: 0;
-  max-width: 100%;
-}
-.brand,
-.brand-copy,
-.main-nav,
-.resources,
-.resource-pill { min-width: 0; }
-.btn,
-.nav-btn { max-width: 100%; }
-@media (max-width: 1180px) {
-  .home-grid {
-    grid-template-columns: minmax(0, .92fr) minmax(0, 1.35fr);
-  }
-  .party-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr);
-  }
-  .adventure-grid {
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, .8fr);
-  }
-  .result-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 920px) and (orientation: landscape) {
-  .topbar {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-  .brand,
-  .resources { overflow: hidden; }
-  .home-grid {
-    grid-template-columns: minmax(0, .88fr) minmax(0, 1.2fr);
-  }
-  .party-grid {
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, .9fr);
-  }
-  .adventure-grid {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, .8fr);
-  }
-  .result-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 680px) and (orientation: landscape) {
-  .brand-copy { display: none; }
-  .topbar {
-    grid-template-columns: auto auto minmax(0, 1fr);
-  }
-}
+  <style>
+    :root {
+      --bg: #100b16;
+      --bg-soft: #1a1223;
+      --panel: rgba(35, 25, 47, 0.97);
+      --panel-soft: rgba(48, 34, 63, 0.88);
+      --line: rgba(255, 255, 255, 0.11);
+      --line-strong: rgba(226, 185, 96, 0.45);
+      --text: #f6f0fa;
+      --muted: #b9abc5;
+      --accent: #e2b960;
+      --accent-dark: #9f6b25;
+      --safe: #8fdda7;
+      --danger: #ef7f83;
+      --injury: #f2b46f;
+      --trauma: #c593ed;
+      --blue: #8eb8ff;
+      --shadow: 0 18px 46px rgba(0, 0, 0, 0.38);
+      --radius: 18px;
+      --topbar: 58px;
+    }
 
-</style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(122, 76, 160, 0.25), transparent 34%),
+        radial-gradient(circle at 90% 100%, rgba(190, 131, 45, 0.14), transparent 34%),
+        var(--bg);
+      font-family:
+        Pretendard,
+        "Noto Sans KR",
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    button {
+      border: 0;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+      filter: grayscale(0.25);
+    }
+
+    strong {
+      font-weight: 900;
+    }
+
+    .app-frame {
+      width: 100%;
+      max-width: 540px;
+      height: 100dvh;
+      min-height: 0;
+      margin: 0 auto;
+      overflow: hidden;
+      border-inline: 1px solid rgba(255, 255, 255, 0.04);
+      background:
+        linear-gradient(rgba(16, 11, 22, 0.72), rgba(16, 11, 22, 0.95)),
+        var(--bg);
+      box-shadow: 0 0 80px rgba(0, 0, 0, 0.46);
+    }
+
+    .screen {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .screen-layout {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: var(--topbar) minmax(0, 1fr);
+    }
+
+    .screen-layout.with-bottom {
+      grid-template-rows: var(--topbar) minmax(0, 1fr) auto;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      height: var(--topbar);
+      padding:
+        max(7px, env(safe-area-inset-top))
+        13px
+        7px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(17, 11, 23, 0.94);
+      backdrop-filter: blur(14px);
+    }
+
+    .gold-box {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .gold-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border-radius: 11px;
+      color: #2b1a06;
+      background: linear-gradient(135deg, #f5d780, #bf812c);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .gold-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.65rem;
+    }
+
+    .gold-copy strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 1px;
+      color: #f3d17c;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.86rem;
+    }
+
+    .back-btn {
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: #ddd2e6;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.73rem;
+      font-weight: 850;
+    }
+
+    .content {
+      min-width: 0;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 14px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom));
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
+    }
+
+    .content.no-scroll {
+      overflow-y: hidden;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.16rem;
+      letter-spacing: -0.04em;
+    }
+
+    .page-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.55;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 11px;
+    }
+
+    .section-head h2,
+    .section-head h3 {
+      margin: 0;
+      font-size: 0.94rem;
+      letter-spacing: -0.025em;
+    }
+
+    .section-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.67rem;
+      line-height: 1.5;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(155deg, rgba(44, 31, 57, 0.96), rgba(27, 19, 37, 0.97));
+      box-shadow: var(--shadow);
+    }
+
+    .panel + .panel {
+      margin-top: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 43px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      font-size: 0.77rem;
+      font-weight: 900;
+    }
+
+    .btn.primary {
+      color: #271804;
+      background: linear-gradient(135deg, #f2d17a, #be812e);
+      box-shadow: 0 9px 20px rgba(226, 185, 96, 0.17);
+    }
+
+    .btn.secondary {
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .btn.blue {
+      color: #101827;
+      background: linear-gradient(135deg, #c1d6ff, #78a7f6);
+    }
+
+    .btn.danger {
+      color: #fff;
+      border-color: rgba(239, 127, 131, 0.3);
+      background: rgba(155, 60, 68, 0.6);
+    }
+
+    .btn.small {
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 10px;
+      font-size: 0.68rem;
+    }
+
+    .btn.wide {
+      width: 100%;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 120px;
+      padding: 20px;
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: 15px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.73rem;
+      line-height: 1.6;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 7px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      color: #d7ccdf;
+      background: rgba(255, 255, 255, 0.045);
+      font-size: 0.61rem;
+      font-weight: 850;
+    }
+
+    .chip.safe {
+      color: #bdf0ca;
+      border-color: rgba(143, 221, 167, 0.25);
+      background: rgba(72, 139, 90, 0.17);
+    }
+
+    .chip.injury {
+      color: #ffd19d;
+      border-color: rgba(242, 180, 111, 0.25);
+      background: rgba(156, 96, 39, 0.17);
+    }
+
+    .chip.trauma {
+      color: #e0b7fb;
+      border-color: rgba(197, 147, 237, 0.27);
+      background: rgba(123, 69, 164, 0.18);
+    }
+
+    .chip.dead {
+      color: #ffb5b4;
+      border-color: rgba(239, 127, 131, 0.28);
+      background: rgba(155, 60, 68, 0.18);
+    }
+
+    .bottom-actions {
+      position: relative;
+      z-index: 15;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      padding:
+        10px
+        13px
+        max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: rgba(17, 11, 23, 0.96);
+      backdrop-filter: blur(14px);
+    }
+
+    .bottom-actions.single {
+      grid-template-columns: 1fr;
+    }
+
+    .title-screen {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px 18px max(24px, env(safe-area-inset-bottom));
+      background:
+        linear-gradient(rgba(13, 8, 18, 0.47), rgba(13, 8, 18, 0.94)),
+        radial-gradient(circle at 50% 18%, rgba(226, 185, 96, 0.2), transparent 30%),
+        radial-gradient(circle at 15% 60%, rgba(123, 76, 163, 0.23), transparent 38%);
+    }
+
+    .title-card {
+      width: 100%;
+      max-width: 430px;
+      text-align: center;
+    }
+
+    .title-emblem {
+      display: grid;
+      place-items: center;
+      width: 104px;
+      height: 104px;
+      margin: 0 auto;
+      border: 1px solid rgba(226, 185, 96, 0.35);
+      border-radius: 31px;
+      color: #291a07;
+      background: linear-gradient(145deg, #f4d88d, #b87727);
+      box-shadow:
+        inset 0 2px rgba(255, 255, 255, 0.45),
+        0 24px 60px rgba(0, 0, 0, 0.42);
+      font-size: 3rem;
+      transform: rotate(-2deg);
+    }
+
+    .title-card h1 {
+      margin: 24px 0 8px;
+      font-size: clamp(1.75rem, 8vw, 2.45rem);
+      line-height: 1.12;
+      letter-spacing: -0.06em;
+    }
+
+    .title-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.7;
+    }
+
+    .start-btn {
+      width: min(100%, 310px);
+      min-height: 56px;
+      margin-top: 34px;
+      border-radius: 17px;
+      font-size: 0.93rem;
+    }
+
+    .title-version {
+      margin-top: 14px;
+      color: #786a84;
+      font-size: 0.61rem;
+    }
+
+    .hall-content {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(230px, 1fr) auto;
+      gap: 13px;
+    }
+
+    .hall-hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 180px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background:
+        linear-gradient(145deg, rgba(53, 36, 69, 0.96), rgba(28, 19, 38, 0.97)),
+        radial-gradient(circle at 82% 15%, rgba(226, 185, 96, 0.22), transparent 40%);
+      box-shadow: var(--shadow);
+    }
+
+    .hall-hero::after {
+      content: "🏰";
+      position: absolute;
+      right: -10px;
+      bottom: -30px;
+      opacity: 0.085;
+      font-size: 9rem;
+      pointer-events: none;
+    }
+
+    .hall-hero small {
+      color: var(--accent);
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+    }
+
+    .hall-hero h1 {
+      margin: 9px 0 5px;
+      font-size: 1.45rem;
+      letter-spacing: -0.045em;
+    }
+
+    .hall-hero p {
+      max-width: 320px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.71rem;
+      line-height: 1.6;
+    }
+
+    .hall-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 17px;
+    }
+
+    .hall-stat {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .hall-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.6rem;
+    }
+
+    .hall-stat strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 4px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.82rem;
+    }
+
+    .hall-art {
+      min-height: 230px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(226, 185, 96, 0.14), transparent 28%),
+        linear-gradient(160deg, rgba(34, 24, 45, 0.6), rgba(22, 15, 30, 0.72));
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .hall-art div {
+      text-align: center;
+    }
+
+    .hall-art span {
+      display: block;
+      font-size: 4.4rem;
+      filter: drop-shadow(0 15px 18px rgba(0, 0, 0, 0.35));
+    }
+
+    .hall-art p {
+      margin: 13px 0 0;
+      color: #9f91ab;
+      font-size: 0.67rem;
+    }
+
+    .hall-menu {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .hall-menu-btn {
+      min-width: 0;
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 39px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: linear-gradient(145deg, rgba(48, 34, 62, 0.96), rgba(30, 21, 40, 0.96));
+      text-align: left;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.22);
+    }
+
+    .hall-menu-btn .icon {
+      display: grid;
+      place-items: center;
+      width: 39px;
+      height: 39px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 1.25rem;
+    }
+
+    .hall-menu-btn strong {
+      display: block;
+      font-size: 0.75rem;
+    }
+
+    .hall-menu-btn small {
+      display: block;
+      overflow: hidden;
+      margin-top: 3px;
+      color: var(--muted);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.58rem;
+    }
+
+    .memorial-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .memorial-entry {
+      overflow: hidden;
+      border: 1px solid rgba(239, 127, 131, 0.17);
+      border-radius: 15px;
+      background: rgba(88, 42, 51, 0.13);
+    }
+
+    .memorial-summary {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 11px;
+      background: transparent;
+      text-align: left;
+    }
+
+    .memorial-summary .avatar,
+    .adventurer-avatar,
+    .party-avatar,
+    .result-avatar {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 1.17rem;
+    }
+
+    .memorial-summary h3,
+    .adventurer-card h3,
+    .party-slot h3,
+    .result-member h3 {
+      overflow: hidden;
+      margin: 0;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.75rem;
+    }
+
+    .memorial-summary p,
+    .adventurer-card p,
+    .party-slot p,
+    .result-member p {
+      overflow: hidden;
+      margin: 3px 0 0;
+      color: var(--muted);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.61rem;
+    }
+
+    .expand-mark {
+      color: #c9bbd3;
+      font-size: 0.74rem;
+      transition: transform 0.2s ease;
+    }
+
+    .memorial-entry.open .expand-mark {
+      transform: rotate(180deg);
+    }
+
+    .memorial-detail {
+      display: none;
+      padding: 0 12px 12px;
+    }
+
+    .memorial-entry.open .memorial-detail {
+      display: block;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .detail-cell {
+      min-width: 0;
+      padding: 9px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .detail-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.58rem;
+    }
+
+    .detail-cell strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 4px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.69rem;
+    }
+
+    .party-content {
+      min-height: calc(100dvh - var(--topbar));
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 11px;
+    }
+
+    .party-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .party-slot {
+      min-width: 0;
+      min-height: 91px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: center;
+    }
+
+    .party-slot.filled {
+      border-color: rgba(226, 185, 96, 0.35);
+      background: rgba(226, 185, 96, 0.08);
+    }
+
+    .party-slot .party-avatar {
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 6px;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .party-slot h3 {
+      font-size: 0.6rem;
+    }
+
+    .party-slot p {
+      font-size: 0.52rem;
+    }
+
+    .party-slot.empty-slot {
+      display: grid;
+      place-items: center;
+      color: #81738d;
+      border-style: dashed;
+      font-size: 0.57rem;
+    }
+
+    .adventurer-list-wrap {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .adventurer-list {
+      min-height: 0;
+      overflow-y: auto;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      padding-right: 2px;
+      overscroll-behavior: contain;
+    }
+
+    .adventurer-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: left;
+    }
+
+    .adventurer-card.selected {
+      border-color: var(--line-strong);
+      background: rgba(226, 185, 96, 0.1);
+    }
+
+    .adventurer-meta {
+      min-width: 0;
+    }
+
+    .adventurer-meta .chip-row {
+      margin-top: 6px;
+    }
+
+    .party-toggle-label {
+      color: #dbc98d;
+      font-size: 0.59rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .city-map,
+    .dungeon-map {
+      position: relative;
+      min-height: calc(100dvh - var(--topbar) - 28px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 23px;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(226, 185, 96, 0.15), transparent 23%),
+        radial-gradient(circle at 75% 65%, rgba(112, 80, 145, 0.2), transparent 32%),
+        linear-gradient(155deg, rgba(45, 31, 57, 0.96), rgba(22, 15, 30, 0.98));
+      box-shadow: var(--shadow);
+    }
+
+    .city-map::before,
+    .dungeon-map::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.14;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+      background-size: 34px 34px;
+      pointer-events: none;
+    }
+
+    .map-title {
+      position: absolute;
+      z-index: 2;
+      top: 18px;
+      left: 18px;
+    }
+
+    .map-title h1 {
+      margin: 0;
+      font-size: 1.22rem;
+    }
+
+    .map-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.67rem;
+    }
+
+    .place-btn,
+    .dungeon-btn {
+      position: absolute;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      width: 114px;
+      height: 114px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.13), transparent 32%),
+        linear-gradient(145deg, rgba(71, 49, 89, 0.97), rgba(34, 23, 45, 0.98));
+      box-shadow:
+        inset 0 2px rgba(255, 255, 255, 0.07),
+        0 16px 32px rgba(0, 0, 0, 0.31);
+      text-align: center;
+    }
+
+    .place-btn .place-icon,
+    .dungeon-btn .place-icon {
+      display: block;
+      font-size: 2rem;
+    }
+
+    .place-btn strong,
+    .dungeon-btn strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.7rem;
+    }
+
+    .place-btn small,
+    .dungeon-btn small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.52rem;
+    }
+
+    .place-blacksmith {
+      top: 22%;
+      left: 9%;
+    }
+
+    .place-toolshop {
+      top: 19%;
+      right: 8%;
+    }
+
+    .place-restaurant {
+      bottom: 13%;
+      left: 12%;
+    }
+
+    .place-clinic {
+      right: 11%;
+      bottom: 11%;
+    }
+
+    .map-party {
+      position: relative;
+      z-index: 4;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(44, 31, 57, 0.97), rgba(27, 19, 37, 0.97));
+      box-shadow: var(--shadow);
+    }
+
+    .map-party-list {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .map-party-member {
+      min-width: 0;
+      flex: 1 1 0;
+      text-align: center;
+    }
+
+    .map-party-member .party-avatar {
+      width: 31px;
+      height: 31px;
+      margin: 0 auto 4px;
+      border-radius: 9px;
+      font-size: 0.93rem;
+    }
+
+    .map-party-member strong,
+    .map-party-member span {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .map-party-member strong {
+      font-size: 0.52rem;
+    }
+
+    .map-party-member span {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.48rem;
+    }
+
+    .dungeon-map {
+      min-height: calc(100dvh - var(--topbar) - 124px);
+    }
+
+    .dungeon-easy {
+      top: 17%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-color: rgba(143, 221, 167, 0.28);
+    }
+
+    .dungeon-normal {
+      top: 46%;
+      left: 11%;
+      border-color: rgba(142, 184, 255, 0.3);
+    }
+
+    .dungeon-hard {
+      right: 10%;
+      bottom: 10%;
+      border-color: rgba(239, 127, 131, 0.3);
+    }
+
+    .shop-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .shop-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .shop-row .item-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 1.2rem;
+    }
+
+    .shop-row h3 {
+      margin: 0;
+      font-size: 0.72rem;
+    }
+
+    .shop-row p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.59rem;
+    }
+
+    .shop-row-actions {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: 5px;
+    }
+
+    .adventure-content {
+      display: grid;
+      gap: 11px;
+    }
+
+    .progress-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .progress-step {
+      min-width: 0;
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: #85778f;
+      background: rgba(255, 255, 255, 0.025);
+      text-align: center;
+      font-size: 0.56rem;
+      font-weight: 900;
+    }
+
+    .progress-step.current {
+      color: #2c1b05;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .progress-step.done {
+      color: #bff0cb;
+      border-color: rgba(143, 221, 167, 0.3);
+      background: rgba(66, 135, 84, 0.18);
+    }
+
+    .adventure-party {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .adventure-member {
+      min-width: 0;
+      padding: 8px 5px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: center;
+    }
+
+    .adventure-member.dead-member {
+      opacity: 0.45;
+      filter: grayscale(0.7);
+    }
+
+    .adventure-member .party-avatar {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 5px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+
+    .adventure-member strong,
+    .adventure-member span {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .adventure-member strong {
+      font-size: 0.55rem;
+    }
+
+    .adventure-member span {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.48rem;
+    }
+
+    .encounter-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 85% 12%, rgba(226, 185, 96, 0.16), transparent 30%),
+        linear-gradient(155deg, rgba(47, 33, 60, 0.97), rgba(25, 17, 34, 0.98));
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .encounter-card small {
+      color: var(--accent);
+      font-size: 0.6rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .encounter-card h1 {
+      margin: 8px 0 4px;
+      font-size: 1.26rem;
+      letter-spacing: -0.04em;
+    }
+
+    .encounter-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.65rem;
+    }
+
+    .encounter-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 14px;
+    }
+
+    .encounter-stat {
+      min-width: 0;
+      padding: 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .encounter-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.56rem;
+    }
+
+    .encounter-stat strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 4px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.75rem;
+    }
+
+    .dice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .die-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 43px;
+      align-items: center;
+      gap: 8px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: left;
+    }
+
+    .die-card strong,
+    .die-card span {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .die-card strong {
+      font-size: 0.64rem;
+    }
+
+    .die-card span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.52rem;
+    }
+
+    .die-face {
+      display: grid;
+      place-items: center;
+      width: 43px;
+      height: 43px;
+      border-radius: 12px;
+      color: #2a1a06;
+      background: #f3dfaa;
+      font-size: 1.15rem;
+      font-weight: 950;
+    }
+
+    .die-face.skipped {
+      color: #e2c4f5;
+      background: rgba(122, 67, 162, 0.32);
+    }
+
+    .roll-total {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .roll-total span {
+      color: var(--muted);
+      font-size: 0.64rem;
+    }
+
+    .roll-total strong {
+      color: #f3d17c;
+      font-size: 1.05rem;
+    }
+
+    .result-banner {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 0.67rem;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .result-banner.success {
+      color: #d5f7de;
+      border: 1px solid rgba(143, 221, 167, 0.29);
+      background: rgba(62, 133, 80, 0.21);
+    }
+
+    .result-banner.failure {
+      color: #ffd0d0;
+      border: 1px solid rgba(239, 127, 131, 0.3);
+      background: rgba(150, 57, 65, 0.22);
+    }
+
+    .result-banner.preview {
+      color: #f8e6b5;
+      border: 1px solid rgba(226, 185, 96, 0.28);
+      background: rgba(154, 106, 37, 0.18);
+    }
+
+    .survival-list {
+      display: grid;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .survival-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 0.6rem;
+    }
+
+    .active-tool {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .active-tool .item-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 1.2rem;
+    }
+
+    .active-tool h3 {
+      margin: 0;
+      font-size: 0.7rem;
+    }
+
+    .active-tool p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.57rem;
+      line-height: 1.4;
+    }
+
+    .result-hero {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 21px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(226, 185, 96, 0.18), transparent 37%),
+        linear-gradient(155deg, rgba(48, 33, 61, 0.98), rgba(25, 17, 34, 0.98));
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .result-hero.success {
+      border-color: rgba(143, 221, 167, 0.3);
+    }
+
+    .result-hero.failure {
+      border-color: rgba(239, 127, 131, 0.31);
+    }
+
+    .result-hero .big-icon {
+      font-size: 2.8rem;
+    }
+
+    .result-hero h1 {
+      margin: 9px 0 5px;
+      font-size: 1.4rem;
+    }
+
+    .result-hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.55;
+    }
+
+    .result-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 15px;
+    }
+
+    .result-summary-cell {
+      min-width: 0;
+      padding: 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .result-summary-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.55rem;
+    }
+
+    .result-summary-cell strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 4px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.72rem;
+    }
+
+    .result-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .result-member,
+    .report-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .report-index {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .report-row h3 {
+      margin: 0;
+      font-size: 0.68rem;
+    }
+
+    .report-row p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.56rem;
+    }
+
+    .report-result {
+      font-size: 0.62rem;
+      font-weight: 900;
+    }
+
+    .report-result.success {
+      color: #bdf0ca;
+    }
+
+    .report-result.failure {
+      color: #ffb4b3;
+    }
+
+    .modal-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        16px
+        max(18px, env(safe-area-inset-bottom));
+      background: rgba(7, 4, 10, 0.76);
+      backdrop-filter: blur(9px);
+    }
+
+    .modal {
+      width: min(100%, 470px);
+      max-height: min(82dvh, 720px);
+      overflow-y: auto;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 21px;
+      background: linear-gradient(155deg, #30223e, #1c1425);
+      box-shadow: 0 26px 75px rgba(0, 0, 0, 0.55);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .modal-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.65rem;
+      line-height: 1.45;
+    }
+
+    .modal-close {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.77rem;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    .modal-actions.single {
+      grid-template-columns: 1fr;
+    }
+
+    .recruit-card {
+      padding: 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: rgba(226, 185, 96, 0.08);
+      text-align: center;
+    }
+
+    .recruit-avatar {
+      display: grid;
+      place-items: center;
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 11px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 2rem;
+    }
+
+    .recruit-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .recruit-card p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.66rem;
+      line-height: 1.5;
+    }
+
+    .item-select-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .item-select-row {
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 39px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: left;
+    }
+
+    .item-select-row.selected {
+      border-color: var(--line-strong);
+      background: rgba(226, 185, 96, 0.1);
+    }
+
+    .item-select-row .item-icon {
+      display: grid;
+      place-items: center;
+      width: 39px;
+      height: 39px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 1.16rem;
+    }
+
+    .item-select-row h3 {
+      margin: 0;
+      font-size: 0.68rem;
+    }
+
+    .item-select-row p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.56rem;
+      line-height: 1.4;
+    }
+
+    .item-select-row .count {
+      color: #e9d89f;
+      font-size: 0.61rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .notice-box {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: center;
+    }
+
+    .notice-box .notice-icon {
+      display: block;
+      margin-bottom: 9px;
+      font-size: 2rem;
+    }
+
+    .notice-box h3 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .notice-box p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.67rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 380px) {
+      .content {
+        padding-inline: 10px;
+      }
+
+      .hall-menu-btn {
+        grid-template-columns: 34px minmax(0, 1fr);
+        padding: 10px;
+      }
+
+      .hall-menu-btn .icon {
+        width: 34px;
+        height: 34px;
+      }
+
+      .place-btn,
+      .dungeon-btn {
+        width: 102px;
+        height: 102px;
+      }
+
+      .shop-row {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .shop-row-actions {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 700px) {
+      .app-frame {
+        border-inline: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .city-map {
+        min-height: calc(100dvh - var(--topbar) - 64px);
+      }
+
+      .dungeon-map {
+        min-height: calc(100dvh - var(--topbar) - 160px);
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
-<header class="topbar">
-<div class="brand">
-<div class="brand-mark">🏰</div>
-<div class="brand-copy">
-<h1>길드 마스터 시뮬레이터</h1>
-<p>모험가를 모집하고 파티를 편성해 던전으로 보내세요.</p>
-</div>
-</div>
-<nav class="main-nav" aria-label="게임 화면 이동">
-<button class="nav-btn" data-nav="home">길드 홀</button>
-<button class="nav-btn" data-nav="party">파티 구성</button>
-</nav>
-<div class="resources">
-<div class="resource-pill gold"><span>길드 자금</span><b id="topGold">0 G</b></div>
-<div class="resource-pill"><span>생존</span><b id="topAlive">0명</b></div>
-<div class="resource-pill dead"><span>사망</span><b id="topDead">0명</b></div>
-</div>
-</header>
-<main class="screen-shell">
-<section id="screen" class="game-screen" aria-live="polite"></section>
-</main>
-</div>
-<div class="orientation-overlay">
-<div class="orientation-card">
-<span class="phone">📱</span>
-<h2>화면을 가로로 돌려주세요</h2>
-<p>길드 마스터 시뮬레이터는 모바일 가로 화면에 맞춰 설계되었습니다.</p>
-</div>
-</div>
-<script src="./game-db.js"></script>
-<script>
-(() => {
-"use strict";
-const STORAGE_KEY = "dicebound-expedition-v1";
-const SAVE_VERSION = 6;
-const GAME_DB = globalThis.GAME_DB;
-const requiredLists = [
-"firstNames",
-"lastNames",
-"jobs",
-"races",
-"genders",
-"personalities",
-"encounterNames"
-];
-const databaseInvalid = !GAME_DB
-|| requiredLists.some(key => !Array.isArray(GAME_DB[key]) || GAME_DB[key].length === 0)
-|| !GAME_DB.items
-|| !GAME_DB.difficulties;
-const screenEl = document.getElementById("screen");
-const topGoldEl = document.getElementById("topGold");
-const topAliveEl = document.getElementById("topAlive");
-const topDeadEl = document.getElementById("topDead");
-if (databaseInvalid) {
-screenEl.innerHTML = `
-<div class="panel" style="max-width:720px;margin:20px auto">
-<h2 class="panel-title">게임 데이터 파일을 불러오지 못했습니다.</h2>
-<p class="panel-subtitle">
-<strong>game-db.js</strong> 파일이 index.html과 같은 폴더에 있는지 확인해 주세요.
-GitHub의 파일명과 대소문자도 정확히 같아야 합니다.
-</p>
-</div>
-`;
-return;
-}
-const GACHA_COST = Number(GAME_DB.settings?.gachaCost) || 10;
-const STARTING_GOLD = Number(GAME_DB.settings?.startingGold) || 300;
-const DIFFICULTIES = GAME_DB.difficulties;
-const ITEM_DEFS = GAME_DB.items;
-const ENCOUNTER_NAMES = GAME_DB.encounterNames;
-const VALID_SCREENS = ["home", "party", "adventure", "result"];
-function uid() {
-if (window.crypto && typeof window.crypto.randomUUID === "function") {
-return window.crypto.randomUUID();
-}
-return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-function randomInt(min, max) {
-return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function pick(list) {
-return list[randomInt(0, list.length - 1)];
-}
-function clamp(value, min, max) {
-return Math.max(min, Math.min(max, value));
-}
-function escapeHtml(value) {
-return String(value ?? "")
-.replaceAll("&", "&amp;")
-.replaceAll("<", "&lt;")
-.replaceAll(">", "&gt;")
-.replaceAll('"', "&quot;")
-.replaceAll("'", "&#039;");
-}
-function formatTime(iso) {
-try {
-return new Intl.DateTimeFormat("ko-KR", {
-month: "2-digit",
-day: "2-digit",
-hour: "2-digit",
-minute: "2-digit"
-}).format(new Date(iso));
-} catch {
-return "";
-}
-}
-function findDbEntry(list, id) {
-if (!id || !Array.isArray(list)) return null;
-return list.find(entry => entry.id === id) || null;
-}
-function getCharacterName(character) {
-if (character.legacyName) return character.legacyName;
-const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
-const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
-return [firstName?.name, lastName?.name].filter(Boolean).join(" ")
-|| character.name
-|| "이름 없는 모험가";
-}
-function getCharacterJob(character) {
-return findDbEntry(GAME_DB.jobs, character.jobId) || {
-id: null,
-name: character.legacyJobName || character.job || "무직",
-icon: character.legacyJobIcon || character.icon || "🧭",
-description: "이전 버전에서 모집된 모험가의 직업입니다."
-};
-}
-function getCharacterProfile(character) {
-return {
-name: getCharacterName(character),
-job: getCharacterJob(character),
-race: findDbEntry(GAME_DB.races, character.raceId) || { name: "미상" },
-gender: findDbEntry(GAME_DB.genders, character.genderId) || { name: "미상" },
-personality: findDbEntry(GAME_DB.personalities, character.personalityId) || { name: "성격 미상", description: "" }
-};
-}
-function characterSnapshot(character, injuredBeforeRecovery = character.injured) {
-const profile = getCharacterProfile(character);
-return {
-id: character.id,
-name: profile.name,
-icon: profile.job.icon,
-job: profile.job.name,
-race: profile.race.name,
-gender: profile.gender.name,
-personality: profile.personality.name,
-alive: character.alive,
-trauma: character.trauma,
-injured: Boolean(injuredBeforeRecovery),
-successCount: Number(character.successCount) || 0
-};
-}
-function defaultState() {
-return {
-saveVersion: SAVE_VERSION,
-currentScreen: "home",
-gold: STARTING_GOLD,
-inventory: { rope: 0, bandage: 0, lockpick: 0 },
-selectedItem: null,
-selectedDifficulty: "easy",
-characters: [],
-partyIds: [],
-dungeon: null,
-lastSummary: null,
-log: []
-};
-}
-function loadState() {
-try {
-const raw = localStorage.getItem(STORAGE_KEY);
-if (!raw) return defaultState();
-const parsed = JSON.parse(raw);
-const fresh = defaultState();
-const merged = {
-...fresh,
-...parsed,
-inventory: { ...fresh.inventory, ...(parsed.inventory || {}) },
-characters: Array.isArray(parsed.characters) ? parsed.characters : [],
-partyIds: Array.isArray(parsed.partyIds) ? parsed.partyIds : [],
-log: Array.isArray(parsed.log) ? parsed.log : []
-};
-merged.saveVersion = SAVE_VERSION;
-merged.gold = Number.isFinite(Number(merged.gold)) ? Number(merged.gold) : STARTING_GOLD;
-merged.selectedDifficulty = DIFFICULTIES[merged.selectedDifficulty] ? merged.selectedDifficulty : "easy";
-merged.currentScreen = VALID_SCREENS.includes(merged.currentScreen) ? merged.currentScreen : "home";
-merged.characters = merged.characters.map(character => {
-const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
-const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
-const matchedJob = findDbEntry(GAME_DB.jobs, character.jobId)
-|| GAME_DB.jobs.find(job => job.name === character.job);
-const race = findDbEntry(GAME_DB.races, character.raceId);
-const gender = findDbEntry(GAME_DB.genders, character.genderId);
-const personality = findDbEntry(GAME_DB.personalities, character.personalityId);
-return {
-...character,
-firstNameId: firstName?.id || null,
-lastNameId: lastName?.id || null,
-legacyName: character.legacyName || (!(firstName && lastName) ? (character.name || null) : null),
-jobId: matchedJob?.id || null,
-legacyJobName: character.legacyJobName || (!matchedJob ? (character.job || null) : null),
-legacyJobIcon: character.legacyJobIcon || (!matchedJob ? (character.icon || "🧭") : null),
-raceId: race?.id || pick(GAME_DB.races).id,
-genderId: gender?.id || pick(GAME_DB.genders).id,
-personalityId: personality?.id || pick(GAME_DB.personalities).id,
-alive: character.alive !== false,
-injured: Boolean(character.injured),
-trauma: Boolean(character.trauma),
-successCount: Number.isFinite(Number(character.successCount)) ? Number(character.successCount) : 0
-};
-});
-if (merged.dungeon) {
-const difficultyKey = DIFFICULTIES[merged.dungeon.difficulty]
-? merged.dungeon.difficulty
-: merged.selectedDifficulty;
-const difficulty = DIFFICULTIES[difficultyKey];
-merged.dungeon = {
-carriedItem: null,
-itemUsed: false,
-bandageTargetMode: false,
-ropeRerolled: false,
-traumaSkips: {},
-startingTraumaIds: [],
-encounterReports: [],
-difficulty: difficultyKey,
-...merged.dungeon
-};
-merged.dungeon.encounters = (merged.dungeon.encounters || []).map(encounter => {
-if (Number.isFinite(Number(encounter.min)) && Number.isFinite(Number(encounter.max))) {
-return {
-...encounter,
-min: Number(encounter.min),
-max: Number(encounter.max),
-baseReward: Number.isFinite(Number(encounter.baseReward))
-? Number(encounter.baseReward)
-: Math.max(1, Math.round((Number(encounter.reward) || 1) / difficulty.rewardMultiplier)),
-reward: Number(encounter.reward) || 1
-};
-}
-const radius = Math.floor(difficulty.rangeSize / 2);
-const center = clamp(Number(encounter.target) || 14, 4 + radius, 24 - radius);
-const oldReward = Number(encounter.reward) || 40;
-return {
-id: encounter.id || uid(),
-name: encounter.name || pick(ENCOUNTER_NAMES),
-min: center - radius,
-max: center + radius,
-baseReward: Math.max(1, Math.round(oldReward / difficulty.rewardMultiplier)),
-reward: oldReward
-};
-});
-merged.currentScreen = "adventure";
-} else if (merged.currentScreen === "adventure") {
-merged.currentScreen = merged.lastSummary ? "result" : "home";
-}
-return merged;
-} catch (error) {
-console.warn("저장 데이터를 불러오지 못했습니다.", error);
-return defaultState();
-}
-}
-let state = loadState();
-function save() {
-localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-function addLog(text) {
-state.log.unshift({ id: uid(), time: new Date().toISOString(), text });
-state.log = state.log.slice(0, 100);
-}
-function createCharacter() {
-return {
-id: uid(),
-firstNameId: pick(GAME_DB.firstNames).id,
-lastNameId: pick(GAME_DB.lastNames).id,
-jobId: pick(GAME_DB.jobs).id,
-raceId: pick(GAME_DB.races).id,
-genderId: pick(GAME_DB.genders).id,
-personalityId: pick(GAME_DB.personalities).id,
-alive: true,
-injured: false,
-trauma: false,
-successCount: 0
-};
-}
-function livingCharacters() {
-return state.characters.filter(character => character.alive);
-}
-function deadCharacters() {
-return state.characters.filter(character => !character.alive);
-}
-function alivePartyMembers() {
-return state.partyIds
-.map(id => state.characters.find(character => character.id === id))
-.filter(character => character && character.alive);
-}
-function setScreen(nextScreen) {
-if (state.dungeon) {
-state.currentScreen = "adventure";
-} else if (nextScreen === "result" && !state.lastSummary) {
-state.currentScreen = "home";
-} else if (["home", "party", "result"].includes(nextScreen)) {
-state.currentScreen = nextScreen;
-}
-save();
-render();
-}
-function drawCharacters(count) {
-if (state.dungeon) return;
-const cost = count * GACHA_COST;
-if (state.gold < cost) {
-addLog(`모집 실패: ${cost}G가 필요하지만 현재 ${state.gold}G를 보유하고 있습니다.`);
-save();
-render();
-return;
-}
-state.gold -= cost;
-const newcomers = Array.from({ length: count }, createCharacter);
-state.characters.push(...newcomers);
-addLog(`${cost}G를 사용해 ${newcomers.map(getCharacterName).join(", ")} — ${count}명의 모험가를 모집했습니다.`);
-save();
-render();
-}
-function buyItem(key) {
-if (state.dungeon) return;
-const item = ITEM_DEFS[key];
-if (!item) return;
-if (state.gold < item.price) {
-addLog(`${item.name} 구매 실패: ${item.price}G가 필요합니다.`);
-save();
-render();
-return;
-}
-state.gold -= item.price;
-state.inventory[key] = (state.inventory[key] || 0) + 1;
-addLog(`${item.name} 1개를 ${item.price}G에 구매했습니다.`);
-save();
-render();
-}
-function toggleParty(characterId) {
-if (state.dungeon) return;
-const character = state.characters.find(entry => entry.id === characterId);
-if (!character || !character.alive) return;
-const index = state.partyIds.indexOf(characterId);
-if (index >= 0) {
-state.partyIds.splice(index, 1);
-} else if (state.partyIds.length < 4) {
-state.partyIds.push(characterId);
-}
-save();
-render();
-}
-function autoParty() {
-if (state.dungeon) return;
-state.partyIds = livingCharacters().slice(0, 4).map(character => character.id);
-save();
-render();
-}
-function clearParty() {
-if (state.dungeon) return;
-state.partyIds = [];
-save();
-render();
-}
-function selectDifficulty(key) {
-if (state.dungeon || !DIFFICULTIES[key]) return;
-state.selectedDifficulty = key;
-save();
-render();
-}
-function selectItem(key) {
-if (state.dungeon) return;
-if (key === "none") {
-state.selectedItem = null;
-} else if (ITEM_DEFS[key] && (state.inventory[key] || 0) > 0) {
-state.selectedItem = state.selectedItem === key ? null : key;
-}
-save();
-render();
-}
-function generateEncounter(difficultyKey) {
-const difficulty = DIFFICULTIES[difficultyKey] || DIFFICULTIES.easy;
-const radius = Math.floor(difficulty.rangeSize / 2);
-const center = randomInt(4 + radius, 24 - radius);
-const baseReward = randomInt(28, 42);
-return {
-id: uid(),
-name: pick(ENCOUNTER_NAMES),
-min: center - radius,
-max: center + radius,
-baseReward,
-reward: Math.floor(baseReward * difficulty.rewardMultiplier)
-};
-}
-function startDungeon() {
-if (state.dungeon) return;
-const members = alivePartyMembers();
-if (members.length !== 4) {
-addLog("던전 입장 실패: 생존한 파티원 4명이 필요합니다.");
-save();
-render();
-return;
-}
-const difficultyKey = DIFFICULTIES[state.selectedDifficulty] ? state.selectedDifficulty : "easy";
-const difficulty = DIFFICULTIES[difficultyKey];
-let carriedItem = state.selectedItem;
-if (carriedItem && (state.inventory[carriedItem] || 0) <= 0) {
-carriedItem = null;
-state.selectedItem = null;
-}
-members.forEach(character => { character.injured = false; });
-state.dungeon = {
-encounters: [
-generateEncounter(difficultyKey),
-generateEncounter(difficultyKey),
-generateEncounter(difficultyKey)
-],
-difficulty: difficultyKey,
-index: 0,
-phase: "ready",
-earnedGold: 0,
-lastRolls: [],
-lastSuccess: null,
-survivalResults: [],
-startedPartyIds: [...state.partyIds],
-startingTraumaIds: members.filter(character => character.trauma).map(character => character.id),
-encounterReports: [],
-carriedItem,
-itemUsed: false,
-bandageTargetMode: false,
-ropeRerolled: false,
-traumaSkips: {}
-};
-state.lastSummary = null;
-state.currentScreen = "adventure";
-const itemText = carriedItem ? ` 도구는 ${ITEM_DEFS[carriedItem].name}입니다.` : " 도구 없이 출발합니다.";
-addLog(`${members.map(getCharacterName).join(", ")} 파티가 ${difficulty.name} 던전에 입장했습니다.${itemText}`);
-save();
-render();
-}
-function prepareTraumaSkips() {
-const dungeon = state.dungeon;
-if (!dungeon) return;
-dungeon.traumaSkips = dungeon.traumaSkips || {};
-alivePartyMembers().forEach(character => {
-if (character.trauma && !(character.id in dungeon.traumaSkips)) {
-dungeon.traumaSkips[character.id] = Math.random() < 0.5;
-}
-});
-}
-function rollPartyDice() {
-prepareTraumaSkips();
-const traumaSkips = state.dungeon?.traumaSkips || {};
-return alivePartyMembers().map(character => {
-const skipped = Boolean(character.trauma && traumaSkips[character.id]);
-if (skipped) {
-return {
-characterId: character.id,
-name: getCharacterName(character),
-raw: null,
-modifier: 0,
-final: 0,
-skipped: true
-};
-}
-const raw = randomInt(1, 6);
-const modifier = character.injured ? (Math.random() < .5 ? -2 : 2) : 0;
-return {
-characterId: character.id,
-name: getCharacterName(character),
-raw,
-modifier,
-final: clamp(raw + modifier, 1, 6),
-skipped: false
-};
-});
-}
-function rollEncounter() {
-const dungeon = state.dungeon;
-if (!dungeon || dungeon.phase !== "ready") return;
-dungeon.bandageTargetMode = false;
-dungeon.lastRolls = rollPartyDice();
-dungeon.lastSuccess = null;
-dungeon.survivalResults = [];
-const ropeReady = dungeon.carriedItem === "rope"
-&& !dungeon.itemUsed
-&& (state.inventory.rope || 0) > 0;
-if (ropeReady) {
-dungeon.phase = "rolled";
-addLog(`${dungeon.encounters[dungeon.index].name}: 주사위 결과를 확인했습니다. 밧줄로 한 번 재굴림할 수 있습니다.`);
-save();
-render();
-return;
-}
-resolveCurrentRolls();
-}
-function resolveCurrentRolls() {
-const dungeon = state.dungeon;
-if (!dungeon || !["ready", "rolled"].includes(dungeon.phase) || !dungeon.lastRolls.length) return;
-const encounter = dungeon.encounters[dungeon.index];
-const total = dungeon.lastRolls.reduce((sum, roll) => sum + roll.final, 0);
-const success = total >= encounter.min && total <= encounter.max;
-dungeon.lastSuccess = success;
-dungeon.survivalResults = [];
-if (success) {
-dungeon.earnedGold += encounter.reward;
-addLog(`${encounter.name} 성공: 합계 ${total}, 성공 범위 ${encounter.min}~${encounter.max}, +${encounter.reward}G`);
-} else {
-const results = alivePartyMembers().map(character => {
-const survivalRoll = randomInt(1, 6);
-let result = "safe";
-if (survivalRoll === 1) {
-character.alive = false;
-character.injured = false;
-result = "dead";
-} else if (survivalRoll === 2) {
-character.trauma = true;
-result = "trauma";
-} else if (survivalRoll === 3) {
-character.injured = true;
-result = "injured";
-}
-return {
-characterId: character.id,
-name: getCharacterName(character),
-roll: survivalRoll,
-result
-};
-});
-dungeon.survivalResults = results;
-const deaths = results.filter(result => result.result === "dead").map(result => result.name);
-const traumas = results.filter(result => result.result === "trauma").map(result => result.name);
-const injuries = results.filter(result => result.result === "injured").map(result => result.name);
-addLog(
-`${encounter.name} 실패: 합계 ${total}. `
-+ `${deaths.length ? `사망 ${deaths.join(", ")}. ` : ""}`
-+ `${traumas.length ? `트라우마 ${traumas.join(", ")}. ` : ""}`
-+ `${injuries.length ? `부상 ${injuries.join(", ")}.` : "추가 부상 없음."}`
-);
-}
-dungeon.encounterReports[dungeon.index] = {
-index: dungeon.index,
-name: encounter.name,
-min: encounter.min,
-max: encounter.max,
-reward: encounter.reward,
-total,
-success,
-rolls: dungeon.lastRolls.map(roll => ({ ...roll })),
-survivalResults: dungeon.survivalResults.map(result => ({ ...result }))
-};
-dungeon.phase = "resolved";
-save();
-render();
-}
-function confirmRolledResult() {
-if (state.dungeon?.phase === "rolled") resolveCurrentRolls();
-}
-function useRope() {
-const dungeon = state.dungeon;
-if (!dungeon
-|| dungeon.phase !== "rolled"
-|| dungeon.carriedItem !== "rope"
-|| dungeon.itemUsed
-|| (state.inventory.rope || 0) <= 0) return;
-state.inventory.rope -= 1;
-dungeon.itemUsed = true;
-dungeon.ropeRerolled = true;
-dungeon.lastRolls = rollPartyDice();
-addLog("밧줄 1개를 사용해 파티 전체의 주사위를 다시 굴렸습니다.");
-resolveCurrentRolls();
-}
-function toggleBandageTargets() {
-const dungeon = state.dungeon;
-if (!dungeon
-|| dungeon.phase !== "ready"
-|| dungeon.carriedItem !== "bandage"
-|| dungeon.itemUsed
-|| (state.inventory.bandage || 0) <= 0) return;
-dungeon.bandageTargetMode = !dungeon.bandageTargetMode;
-save();
-render();
-}
-function useBandage(characterId) {
-const dungeon = state.dungeon;
-const character = state.characters.find(entry => entry.id === characterId);
-if (!dungeon
-|| dungeon.phase !== "ready"
-|| dungeon.carriedItem !== "bandage"
-|| dungeon.itemUsed
-|| (state.inventory.bandage || 0) <= 0
-|| !character
-|| !character.alive
-|| !character.injured
-|| !state.partyIds.includes(character.id)) return;
-state.inventory.bandage -= 1;
-dungeon.itemUsed = true;
-dungeon.bandageTargetMode = false;
-character.injured = false;
-addLog(`붕대 1개를 사용해 ${getCharacterName(character)}의 부상을 치료했습니다.`);
-save();
-render();
-}
-function advanceDungeon() {
-const dungeon = state.dungeon;
-if (!dungeon || dungeon.phase !== "resolved") return;
-const noSurvivors = alivePartyMembers().length === 0;
-const isLast = dungeon.index >= dungeon.encounters.length - 1;
-if (noSurvivors || isLast) {
-finishDungeon(noSurvivors);
-return;
-}
-dungeon.index += 1;
-dungeon.phase = "ready";
-dungeon.lastRolls = [];
-dungeon.lastSuccess = null;
-dungeon.survivalResults = [];
-dungeon.bandageTargetMode = false;
-dungeon.traumaSkips = {};
-save();
-render();
-}
-function finishDungeon(partyWiped = false) {
-const dungeon = state.dungeon;
-if (!dungeon) return;
-const startedMembers = dungeon.startedPartyIds
-.map(id => state.characters.find(character => character.id === id))
-.filter(Boolean);
-const survivors = startedMembers.filter(character => character.alive);
-const injuredIds = survivors.filter(character => character.injured).map(character => character.id);
-const injuryMultiplier = Math.max(.4, 1 - injuredIds.length * .15);
-if (!partyWiped) {
-survivors.forEach(character => {
-character.successCount = (character.successCount || 0) + 1;
-});
-}
-let lockpickUsed = false;
-let boostedGold = dungeon.earnedGold;
-if (!partyWiped
-&& dungeon.carriedItem === "lockpick"
-&& !dungeon.itemUsed
-&& (state.inventory.lockpick || 0) > 0) {
-state.inventory.lockpick -= 1;
-lockpickUsed = true;
-boostedGold = Math.floor(dungeon.earnedGold * 1.5);
-}
-const finalGold = partyWiped ? 0 : Math.floor(boostedGold * injuryMultiplier);
-state.gold += finalGold;
-const startingTraumaIds = new Set(dungeon.startingTraumaIds || []);
-const newTraumaIds = startedMembers
-.filter(character => character.trauma && !startingTraumaIds.has(character.id))
-.map(character => character.id);
-const snapshots = startedMembers.map(character => characterSnapshot(character, injuredIds.includes(character.id)));
-state.lastSummary = {
-difficulty: dungeon.difficulty || "easy",
-earnedGold: dungeon.earnedGold,
-boostedGold,
-lockpickUsed,
-injuredCount: injuredIds.length,
-multiplier: injuryMultiplier,
-finalGold,
-partyWiped,
-survivors: survivors.length,
-successAwarded: partyWiped ? 0 : survivors.length,
-carriedItem: dungeon.carriedItem,
-memberSnapshots: snapshots,
-deadIds: startedMembers.filter(character => !character.alive).map(character => character.id),
-injuredIds,
-newTraumaIds,
-encounterReports: (dungeon.encounterReports || []).filter(Boolean),
-completedAt: new Date().toISOString()
-};
-state.characters.forEach(character => {
-if (character.alive) character.injured = false;
-});
-state.partyIds = state.partyIds.filter(id => {
-const character = state.characters.find(entry => entry.id === id);
-return character && character.alive;
-});
-if (dungeon.carriedItem && (state.inventory[dungeon.carriedItem] || 0) <= 0) {
-state.selectedItem = null;
-}
-if (partyWiped) {
-addLog(`원정대 전멸. 누적 보상 ${dungeon.earnedGold}G를 회수하지 못했습니다.`);
-} else {
-addLog(
-`던전 정산 완료: ${lockpickUsed ? "락픽 +50%, " : ""}`
-+ `부상자 ${injuredIds.length}명, 부상 배율 ${Math.round(injuryMultiplier * 100)}%, 최종 ${finalGold}G 획득. `
-+ `생환한 ${survivors.length}명의 모험 성공 횟수가 +1 되었습니다.`
-);
-}
-state.dungeon = null;
-state.currentScreen = "result";
-save();
-render();
-}
-function resetGame() {
-const accepted = window.confirm(
-"전체 게임 데이터를 초기화할까요?\n\n"
-+ "골드, 모험가, 묘지, 아이템, 파티, 디버프, 성공 횟수와 기록이 모두 삭제됩니다."
-);
-if (!accepted) return;
-localStorage.removeItem(STORAGE_KEY);
-state = defaultState();
-addLog(`전체 게임 데이터를 초기화했습니다. 길드 자금 ${STARTING_GOLD}G로 새 게임을 시작합니다.`);
-save();
-render();
-}
-function normalizeState() {
-state.partyIds = state.partyIds.filter(id => {
-const character = state.characters.find(entry => entry.id === id);
-return character && character.alive;
-}).slice(0, 4);
-if (state.selectedItem && (state.inventory[state.selectedItem] || 0) <= 0 && !state.dungeon) {
-state.selectedItem = null;
-}
-if (state.dungeon) state.currentScreen = "adventure";
-if (state.currentScreen === "result" && !state.lastSummary) state.currentScreen = "home";
-}
-function renderTopbar() {
-const alive = livingCharacters().length;
-const dead = deadCharacters().length;
-topGoldEl.textContent = `${state.gold.toLocaleString("ko-KR")} G`;
-topAliveEl.textContent = `${alive}명`;
-topDeadEl.textContent = `${dead}명`;
-document.querySelectorAll("[data-nav]").forEach(button => {
-const nav = button.dataset.nav;
-button.classList.toggle("active", state.currentScreen === nav);
-button.classList.toggle("locked", Boolean(state.dungeon));
-button.disabled = Boolean(state.dungeon);
-});
-}
-function renderStatusChips(character) {
-const chips = [];
-if (character.trauma) chips.push('<span class="chip trauma">트라우마</span>');
-if (character.injured) chips.push('<span class="chip injury">부상 ±2</span>');
-if (!chips.length) chips.push('<span class="chip safe">정상</span>');
-return chips.join("");
-}
-function renderHome() {
-const alive = livingCharacters();
-const dead = deadCharacters();
-const traumaCount = alive.filter(character => character.trauma).length;
-const recent = state.log.slice(0, 7);
-const summary = state.lastSummary;
-const shopHtml = Object.entries(ITEM_DEFS).map(([key, item]) => `
-<article class="shop-card">
-<div class="shop-head">
-<span class="shop-icon">${item.icon}</span>
-<span class="shop-count">보유 ${state.inventory[key] || 0}</span>
-</div>
-<div class="shop-name">${escapeHtml(item.name)}</div>
-<div class="shop-desc">${escapeHtml(item.description)}</div>
-<button class="btn secondary small" data-action="buy-item" data-key="${key}" ${state.gold < item.price ? "disabled" : ""}>
-구매 ${item.price}G
-</button>
-</article>
-`).join("");
-const summaryHtml = summary ? `
-<div class="last-result">
-<div class="result-emblem">${summary.partyWiped ? "☠️" : "🏆"}</div>
-<div>
-<h3>${escapeHtml((DIFFICULTIES[summary.difficulty] || DIFFICULTIES.easy).name)} 던전 ${summary.partyWiped ? "전멸" : "완료"}</h3>
-<p>${summary.partyWiped ? "누적 보상을 회수하지 못했습니다." : `생환 ${summary.survivors ?? 0}명 · 모험 성공 +1`}</p>
-</div>
-<strong>${summary.finalGold || 0}G</strong>
-</div>
-` : '<div class="empty-state">아직 완료된 원정이 없습니다.</div>';
-const logHtml = recent.length ? recent.map(entry => `
-<div class="activity-row">
-<time>${formatTime(entry.time)}</time>
-<div>${escapeHtml(entry.text)}</div>
-</div>
-`).join("") : '<div class="empty-state">게임 기록이 아직 없습니다.</div>';
-const graveHtml = dead.length ? dead.slice(0, 10).map(character => {
-const profile = getCharacterProfile(character);
-return `<div class="grave-row">🪦 <strong>${escapeHtml(profile.name)}</strong> · ${escapeHtml(profile.race.name)} ${escapeHtml(profile.job.name)} · 모험 성공 ${character.successCount || 0}회</div>`;
-}).join("") : '<div class="empty-state">아직 기록된 사망자가 없습니다.</div>';
-screenEl.innerHTML = `
-<div class="page-grid home-grid">
-<div class="column-stack home-left">
-<section class="panel hero-panel">
-<span class="hero-label">GUILD HALL</span>
-<h2>모험가를 모집하고<br>다음 원정을 준비하세요.</h2>
-<p>캐릭터의 이름, 종족, 직업과 성격은 게임 데이터베이스에서 무작위로 조합됩니다.</p>
-<div class="hero-actions">
-<button class="btn primary" data-action="draw" data-count="1" ${state.gold < GACHA_COST ? "disabled" : ""}>모험가 1명 모집 · ${GACHA_COST}G</button>
-<button class="btn secondary" data-action="draw" data-count="4" ${state.gold < GACHA_COST * 4 ? "disabled" : ""}>4명 모집 · ${GACHA_COST * 4}G</button>
-<button class="btn blue" data-action="go-party">파티 구성으로</button>
-</div>
-</section>
-<section class="panel scroll">
-<div class="panel-header">
-<div>
-<h2 class="panel-title">길드 상점</h2>
-<p class="panel-subtitle">도구는 원정마다 하나만 가져갈 수 있습니다.</p>
-</div>
-</div>
-<div class="shop-grid">${shopHtml}</div>
-<div style="height:14px"></div>
-<div class="panel-header">
-<div>
-<h2 class="panel-title">묘지</h2>
-<p class="panel-subtitle">사망자의 모험 성공 기록도 남습니다.</p>
-</div>
-</div>
-<div class="grave-list">${graveHtml}</div>
-</section>
-</div>
-<div class="column-stack home-right">
-<section class="panel">
-<div class="stats-grid">
-<div class="stat-card gold"><span>길드 자금</span><strong>${state.gold.toLocaleString("ko-KR")}G</strong></div>
-<div class="stat-card safe"><span>생존 모험가</span><strong>${alive.length}명</strong></div>
-<div class="stat-card trauma"><span>트라우마</span><strong>${traumaCount}명</strong></div>
-<div class="stat-card danger"><span>사망 기록</span><strong>${dead.length}명</strong></div>
-</div>
-<div style="height:12px"></div>
-<div class="panel-header" style="margin-bottom:8px">
-<div><h2 class="panel-title">최근 원정 결과</h2></div>
-${summary ? '<button class="btn secondary small" data-action="view-result">상세 보기</button>' : ''}
-</div>
-${summaryHtml}
-</section>
-<section class="panel scroll">
-<div class="panel-header">
-<div>
-<h2 class="panel-title">길드 기록</h2>
-<p class="panel-subtitle">최근 사건부터 표시됩니다.</p>
-</div>
-<button class="btn danger small" data-action="reset-game">전체 초기화</button>
-</div>
-<div class="activity-list">${logHtml}</div>
-</section>
-</div>
-</div>
-`;
-}
-function renderParty() {
-const living = livingCharacters();
-const party = alivePartyMembers();
-const difficulty = DIFFICULTIES[state.selectedDifficulty] || DIFFICULTIES.easy;
-const selectedTool = state.selectedItem ? ITEM_DEFS[state.selectedItem] : null;
-const rosterHtml = living.length ? living.map(character => {
-const selected = state.partyIds.includes(character.id);
-const profile = getCharacterProfile(character);
-return `
-<article class="character-card ${selected ? "selected" : ""}" data-action="toggle-party" data-id="${character.id}" tabindex="0">
-<div class="card-top">
-<div class="avatar">${profile.job.icon}</div>
-<span class="badge">${selected ? "파티 편성" : "대기"}</span>
-</div>
-<h3>${escapeHtml(profile.name)}</h3>
-<div class="job-line">${escapeHtml(profile.gender.name)} · ${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)}</div>
-<div class="chip-row">${renderStatusChips(character)}</div>
-<div class="personality">성격 · ${escapeHtml(profile.personality.name)}</div>
-<div class="success-count">모험 성공 ${character.successCount || 0}회</div>
-</article>
-`;
-}).join("") : '<div class="empty-state" style="grid-column:1/-1">모험가가 없습니다. 길드 홀에서 먼저 모집해 주세요.</div>';
-const slotsHtml = Array.from({ length: 4 }, (_, index) => {
-const character = party[index];
-if (!character) return '<div class="party-slot empty">빈 파티 슬롯</div>';
-const profile = getCharacterProfile(character);
-return `
-<div class="party-slot">
-<div class="card-top">
-<div class="party-avatar">${profile.job.icon}</div>
-<span class="badge">${index + 1}번</span>
-</div>
-<h3>${escapeHtml(profile.name)}</h3>
-<p>${escapeHtml(profile.race.name)} ${escapeHtml(profile.job.name)} · ${escapeHtml(profile.personality.name)}</p>
-<p class="status-line">${character.trauma ? "트라우마 보유" : "정상"} · 모험 성공 ${character.successCount || 0}회</p>
-</div>
-`;
-}).join("");
-const difficultyHtml = Object.entries(DIFFICULTIES).map(([key, entry]) => `
-<button class="difficulty-card ${state.selectedDifficulty === key ? "selected" : ""}" data-action="difficulty" data-key="${key}">
-<strong>${escapeHtml(entry.name)}</strong>
-<span>${escapeHtml(entry.description)}</span>
-</button>
-`).join("");
-const carryHtml = `
-<button class="carry-option ${!state.selectedItem ? "selected" : ""}" data-action="select-item" data-key="none">
-<span class="item-emoji">✋</span>
-<span><strong>도구 없음</strong><span>아무 도구도 소모하지 않습니다.</span></span>
-<span class="badge">선택</span>
-</button>
-${Object.entries(ITEM_DEFS).map(([key, item]) => {
-const count = state.inventory[key] || 0;
-return `
-<button class="carry-option ${state.selectedItem === key ? "selected" : ""}" data-action="select-item" data-key="${key}" ${count <= 0 ? "disabled" : ""}>
-<span class="item-emoji">${item.icon}</span>
-<span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.description)}</span></span>
-<span class="badge">${count}개</span>
-</button>
-`;
-}).join("")}
-`;
-screenEl.innerHTML = `
-<div class="page-grid party-grid">
-<section class="panel roster-panel">
-<div class="panel-header">
-<div>
-<h2 class="panel-title">모험가 명부</h2>
-<p class="panel-subtitle">캐릭터를 눌러 파티에 넣거나 뺍니다. 현재 ${party.length}/4명</p>
-</div>
-<div class="inline-actions">
-<button class="btn secondary small" data-action="auto-party">자동 편성</button>
-<button class="btn secondary small" data-action="clear-party">전체 해제</button>
-</div>
-</div>
-<div class="roster-grid">${rosterHtml}</div>
-</section>
-<div class="column-stack party-right">
-<section class="panel">
-<div class="panel-header"><div><h2 class="panel-title">원정 파티</h2></div></div>
-<div class="party-slots">${slotsHtml}</div>
-</section>
-<section class="panel">
-<div class="panel-header"><div><h2 class="panel-title">던전 난이도</h2></div></div>
-<div class="difficulty-grid">${difficultyHtml}</div>
-</section>
-<section class="panel scroll">
-<div class="panel-header">
-<div>
-<h2 class="panel-title">원정 도구</h2>
-<p class="panel-subtitle">하나만 선택할 수 있습니다.</p>
-</div>
-</div>
-<div class="carry-list">${carryHtml}</div>
-</section>
-<section class="panel">
-<div class="prep-summary">
-<div><span>파티</span><strong>${party.length}/4명</strong></div>
-<div><span>난이도</span><strong>${escapeHtml(difficulty.name)}</strong></div>
-<div><span>도구</span><strong>${selectedTool ? `${selectedTool.icon} ${escapeHtml(selectedTool.name)}` : "없음"}</strong></div>
-</div>
-<div style="height:9px"></div>
-<button class="btn primary wide" data-action="start-dungeon" ${party.length !== 4 ? "disabled" : ""}>
-${party.length === 4 ? `${escapeHtml(difficulty.name)} 던전 탐험 시작` : `파티원 ${party.length}/4`}
-</button>
-</section>
-</div>
-</div>
-`;
-}
-function renderAdventure() {
-const dungeon = state.dungeon;
-if (!dungeon) {
-state.currentScreen = state.lastSummary ? "result" : "home";
-save();
-render();
-return;
-}
-const encounter = dungeon.encounters[dungeon.index];
-const difficulty = DIFFICULTIES[dungeon.difficulty] || DIFFICULTIES.easy;
-const party = dungeon.startedPartyIds
-.map(id => state.characters.find(character => character.id === id))
-.filter(Boolean);
-const total = dungeon.lastRolls.reduce((sum, roll) => sum + roll.final, 0);
-const previewSuccess = total >= encounter.min && total <= encounter.max;
-const noSurvivors = alivePartyMembers().length === 0;
-const isLast = dungeon.index >= dungeon.encounters.length - 1;
-const progressHtml = dungeon.encounters.map((entry, index) => {
-let className = "";
-if (index < dungeon.index || (index === dungeon.index && dungeon.phase === "resolved")) className = "done";
-if (index === dungeon.index && ["ready", "rolled"].includes(dungeon.phase)) className = "current";
-return `<div class="progress-step ${className}">${index + 1}차 · ${escapeHtml(entry.name)}</div>`;
-}).join("");
-const rollHtml = dungeon.lastRolls.length ? `
-<div class="roll-grid">
-${dungeon.lastRolls.map(roll => {
-const character = state.characters.find(entry => entry.id === roll.characterId);
-const profile = character ? getCharacterProfile(character) : { job: { icon: "🎲" } };
-const detail = roll.skipped
-? "트라우마 발동 · 주사위 미사용"
-: roll.modifier
-? `원본 ${roll.raw} · ${roll.modifier > 0 ? "+2" : "-2"} 보정`
-: "보정 없음";
-return `
-<div class="roll-card">
-<div>
-<h3>${profile.job.icon} ${escapeHtml(roll.name)}</h3>
-<p>${detail}</p>
-</div>
-<div class="die-face ${roll.skipped ? "skipped" : ""}">${roll.final}</div>
-</div>
-`;
-}).join("")}
-</div>
-` : '<div class="empty-state">파티 주사위를 굴리면 결과가 이곳에 표시됩니다.</div>';
-const survivalHtml = dungeon.survivalResults.length ? `
-<div class="survival-list">
-${dungeon.survivalResults.map(result => {
-const label = result.result === "dead" ? "사망"
-: result.result === "trauma" ? "트라우마"
-: result.result === "injured" ? "부상" : "무사 생존";
-return `
-<div class="survival-row">
-<span>${escapeHtml(result.name)} · 판정 ${result.roll}</span>
-<strong class="status-${result.result === "safe" ? "safe" : result.result === "injured" ? "injured" : result.result}">${label}</strong>
-</div>
-`;
-}).join("")}
-</div>
-` : "";
-let resultHtml = "";
-if (dungeon.phase === "rolled") {
-resultHtml = `<div class="result-banner preview">임시 결과 · 합계 ${total} · ${previewSuccess ? "현재 성공" : "현재 실패"} · 밧줄 사용 여부를 선택하세요.</div>`;
-} else if (dungeon.phase === "resolved") {
-resultHtml = `
-<div class="result-banner ${dungeon.lastSuccess ? "success" : "failure"}">
-${dungeon.lastSuccess ? `인카운터 성공 · 합계 ${total} · ${encounter.reward}G 확보` : `인카운터 실패 · 합계 ${total} · 생존 판정 발생`}
-</div>
-${survivalHtml}
-`;
-}
-let actionsHtml = "";
-if (dungeon.phase === "ready") {
-actionsHtml = '<div class="adventure-actions single"><button class="btn primary wide" data-action="roll-encounter">파티 주사위 굴리기</button></div>';
-} else if (dungeon.phase === "rolled") {
-actionsHtml = `
-<div class="adventure-actions">
-<button class="btn primary wide" data-action="use-rope">🪢 밧줄 사용 · 전체 재굴림</button>
-<button class="btn secondary wide" data-action="confirm-roll">현재 결과 확정</button>
-</div>
-`;
-} else {
-actionsHtml = `
-<div class="adventure-actions single">
-<button class="btn primary wide" data-action="advance-dungeon">${noSurvivors || isLast ? "모험 결과 확인" : "다음 인카운터로"}</button>
-</div>
-`;
-}
-const partyHtml = party.map(character => {
-const profile = getCharacterProfile(character);
-return `
-<div class="mini-character ${character.alive ? "" : "dead"}">
-<div class="party-avatar">${profile.job.icon}</div>
-<div>
-<h3>${escapeHtml(profile.name)}</h3>
-<p>${escapeHtml(profile.race.name)} ${escapeHtml(profile.job.name)} · ${escapeHtml(profile.personality.name)}</p>
-</div>
-<div class="chip-row" style="justify-content:flex-end;margin:0">
-${character.alive ? renderStatusChips(character) : '<span class="chip injury">사망</span>'}
-</div>
-</div>
-`;
-}).join("");
-const item = dungeon.carriedItem ? ITEM_DEFS[dungeon.carriedItem] : null;
-const injured = alivePartyMembers().filter(character => character.injured);
-const bandageTargets = dungeon.bandageTargetMode && injured.length ? `
-<div class="bandage-targets">
-${injured.map(character => {
-const profile = getCharacterProfile(character);
-return `<button class="btn secondary small" data-action="use-bandage" data-id="${character.id}">${profile.job.icon} ${escapeHtml(profile.name)} 치료</button>`;
-}).join("")}
-</div>
-` : "";
-let toolAction = "";
-if (item && dungeon.carriedItem === "bandage" && dungeon.phase === "ready" && !dungeon.itemUsed) {
-toolAction = `<button class="btn secondary small" data-action="toggle-bandage" ${injured.length && (state.inventory.bandage || 0) > 0 ? "" : "disabled"}>붕대 사용</button>`;
-}
-screenEl.innerHTML = `
-<div class="page-grid adventure-grid">
-<section class="panel encounter-panel">
-<div class="progress-track">${progressHtml}</div>
-<div class="encounter-header">
-<div>
-<div class="encounter-kicker">ENCOUNTER ${dungeon.index + 1} / 3</div>
-<h2>${escapeHtml(encounter.name)}</h2>
-</div>
-<span class="difficulty-badge">${escapeHtml(difficulty.name)}</span>
-</div>
-<div class="condition-row">
-<div class="condition-box target"><span>성공 범위</span><strong>${encounter.min} ~ ${encounter.max}</strong></div>
-<div class="condition-box"><span>성공 보상</span><strong>${encounter.reward}G</strong></div>
-<div class="condition-box"><span>누적 보상</span><strong>${dungeon.earnedGold}G</strong></div>
-</div>
-<div class="encounter-stage">
-${rollHtml}
-${resultHtml}
-</div>
-${actionsHtml}
-</section>
-<div class="column-stack adventure-right">
-<section class="panel">
-<div class="panel-header">
-<div><h2 class="panel-title">원정 파티</h2><p class="panel-subtitle">현재 생존 ${alivePartyMembers().length}명</p></div>
-</div>
-<div class="party-mini-list">${partyHtml}</div>
-</section>
-<section class="panel scroll">
-<div class="tool-panel">
-<div class="line-between">
-<h3>${item ? `${item.icon} ${escapeHtml(item.name)}` : "원정 도구 없음"}</h3>
-<span class="badge">${item ? (dungeon.itemUsed ? "사용 완료" : dungeon.carriedItem === "lockpick" ? "완료 시 발동" : "사용 가능") : "없음"}</span>
-</div>
-<p>${item ? escapeHtml(item.description) : "이번 원정에는 도구를 가져오지 않았습니다."}</p>
-${toolAction ? `<div style="height:8px"></div>${toolAction}` : ""}
-${bandageTargets}
-</div>
-<div style="height:10px"></div>
-<div class="tool-panel">
-<h3>판정 규칙</h3>
-<p>주사위 합이 성공 범위 안이면 성공합니다. 실패 시 생존 판정 1은 사망, 2는 트라우마, 3은 부상입니다.</p>
-</div>
-</section>
-<section class="panel">
-<div class="prep-summary">
-<div><span>진행</span><strong>${dungeon.index + 1}/3</strong></div>
-<div><span>난이도</span><strong>${escapeHtml(difficulty.name)}</strong></div>
-<div><span>아이템</span><strong>${dungeon.itemUsed ? "사용됨" : "미사용"}</strong></div>
-</div>
-</section>
-</div>
-</div>
-`;
-}
-function renderResult() {
-const summary = state.lastSummary;
-if (!summary) {
-state.currentScreen = "home";
-save();
-render();
-return;
-}
-const difficulty = DIFFICULTIES[summary.difficulty] || DIFFICULTIES.easy;
-const snapshots = Array.isArray(summary.memberSnapshots) ? summary.memberSnapshots : [];
-const deadIds = new Set(summary.deadIds || []);
-const injuredIds = new Set(summary.injuredIds || []);
-const newTraumaIds = new Set(summary.newTraumaIds || []);
-const reports = Array.isArray(summary.encounterReports) ? summary.encounterReports : [];
-const outcomeHtml = snapshots.length ? snapshots.map(member => {
-const tags = [];
-if (deadIds.has(member.id) || !member.alive) tags.push('<span class="chip injury">사망</span>');
-else tags.push('<span class="chip safe">생환</span>');
-if (newTraumaIds.has(member.id)) tags.push('<span class="chip trauma">신규 트라우마</span>');
-else if (member.trauma) tags.push('<span class="chip trauma">트라우마</span>');
-if (injuredIds.has(member.id)) tags.push('<span class="chip injury">부상 후 회복</span>');
-return `
-<div class="outcome-card">
-<div class="card-top">
-<div class="party-avatar">${member.icon || "🧭"}</div>
-<div class="chip-row" style="margin:0;justify-content:flex-end">${tags.join("")}</div>
-</div>
-<h3>${escapeHtml(member.name)}</h3>
-<p>${escapeHtml(member.gender)} · ${escapeHtml(member.race)} · ${escapeHtml(member.job)}</p>
-<p>성격 ${escapeHtml(member.personality)} · 모험 성공 ${member.successCount || 0}회</p>
-</div>
-`;
-}).join("") : '<div class="empty-state" style="grid-column:1/-1">이전 버전에서 완료된 원정이라 상세 파티 기록이 없습니다.</div>';
-const reportHtml = reports.length ? reports.map((report, index) => `
-<div class="report-row">
-<div class="report-index">${index + 1}</div>
-<div>
-<h3>${escapeHtml(report.name)}</h3>
-<p>합계 ${report.total} · 성공 범위 ${report.min}~${report.max}${report.success ? ` · ${report.reward}G 획득` : " · 생존 판정"}</p>
-</div>
-<div class="report-result ${report.success ? "success" : "failure"}">${report.success ? "성공" : "실패"}</div>
-</div>
-`).join("") : '<div class="empty-state">상세 인카운터 기록이 없습니다.</div>';
-screenEl.innerHTML = `
-<div class="page-grid result-grid">
-<div class="column-stack result-left">
-<section class="result-hero ${summary.partyWiped ? "failure" : "success"}">
-<div class="big-icon">${summary.partyWiped ? "☠️" : "🏆"}</div>
-<h2>${escapeHtml(difficulty.name)} 던전 ${summary.partyWiped ? "원정대 전멸" : "탐험 완료"}</h2>
-<p>${summary.partyWiped ? "누적한 골드를 회수하지 못했습니다." : `생환한 ${summary.survivors ?? 0}명의 모험 성공 횟수가 1회 증가했습니다.`}</p>
-<div style="height:14px"></div>
-<div class="summary-grid">
-<div class="summary-card"><span>인카운터 누적</span><strong>${summary.earnedGold || 0}G</strong></div>
-<div class="summary-card"><span>락픽 적용 후</span><strong>${summary.lockpickUsed ? `${summary.boostedGold || 0}G` : "미사용"}</strong></div>
-<div class="summary-card"><span>부상 배율</span><strong>${summary.partyWiped ? "0%" : `${Math.round((summary.multiplier || 0) * 100)}%`}</strong></div>
-<div class="summary-card"><span>부상자</span><strong>${summary.injuredCount || 0}명</strong></div>
-<div class="summary-card"><span>생환자</span><strong>${summary.survivors || 0}명</strong></div>
-<div class="summary-card"><span>최종 보상</span><strong>${summary.finalGold || 0}G</strong></div>
-</div>
-</section>
-<section class="panel scroll">
-<div class="panel-header"><div><h2 class="panel-title">파티 결과</h2><p class="panel-subtitle">부상은 정산 후 회복되며 트라우마는 유지됩니다.</p></div></div>
-<div class="outcome-grid">${outcomeHtml}</div>
-</section>
-<section class="panel">
-<div class="button-row">
-<button class="btn primary" data-action="result-home">길드 홀로 돌아가기</button>
-<button class="btn blue" data-action="result-party">다음 파티 준비</button>
-</div>
-</section>
-</div>
-<section class="panel scroll">
-<div class="panel-header">
-<div>
-<h2 class="panel-title">인카운터 보고서</h2>
-<p class="panel-subtitle">각 판정의 합계와 성공 여부입니다.</p>
-</div>
-</div>
-<div class="report-list">${reportHtml}</div>
-<div style="height:14px"></div>
-<div class="panel-header"><div><h2 class="panel-title">정산 메모</h2></div></div>
-<div class="tool-panel">
-<p>락픽 보너스가 있다면 누적 보상에 먼저 +50%가 적용되고, 이후 생존 부상자 1명당 보상이 15% 감소합니다. 최소 배율은 40%입니다.</p>
-</div>
-</section>
-</div>
-`;
-}
-function render() {
-normalizeState();
-renderTopbar();
-if (state.currentScreen === "party") renderParty();
-else if (state.currentScreen === "adventure") renderAdventure();
-else if (state.currentScreen === "result") renderResult();
-else renderHome();
-}
-document.addEventListener("click", event => {
-const navButton = event.target.closest("[data-nav]");
-if (navButton) {
-setScreen(navButton.dataset.nav);
-return;
-}
-const target = event.target.closest("[data-action]");
-if (!target) return;
-const action = target.dataset.action;
-if (action === "draw") drawCharacters(Number(target.dataset.count) || 1);
-else if (action === "buy-item") buyItem(target.dataset.key);
-else if (action === "go-party") setScreen("party");
-else if (action === "view-result") setScreen("result");
-else if (action === "reset-game") resetGame();
-else if (action === "toggle-party") toggleParty(target.dataset.id);
-else if (action === "auto-party") autoParty();
-else if (action === "clear-party") clearParty();
-else if (action === "difficulty") selectDifficulty(target.dataset.key);
-else if (action === "select-item") selectItem(target.dataset.key);
-else if (action === "start-dungeon") startDungeon();
-else if (action === "roll-encounter") rollEncounter();
-else if (action === "use-rope") useRope();
-else if (action === "confirm-roll") confirmRolledResult();
-else if (action === "advance-dungeon") advanceDungeon();
-else if (action === "toggle-bandage") toggleBandageTargets();
-else if (action === "use-bandage") useBandage(target.dataset.id);
-else if (action === "result-home") setScreen("home");
-else if (action === "result-party") setScreen("party");
-});
-document.addEventListener("keydown", event => {
-if ((event.key === "Enter" || event.key === " ") && event.target.matches('[data-action="toggle-party"]')) {
-event.preventDefault();
-toggleParty(event.target.dataset.id);
-}
-});
-save();
-render();
-})();
-</script>
+  <div id="app" class="app-frame"></div>
+  <div id="modalRoot"></div>
+
+  <script src="./game-db.js"></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "dicebound-expedition-v1";
+      const SAVE_VERSION = 7;
+      const MAX_LIVING_ADVENTURERS = 10;
+
+      const GAME_DB = globalThis.GAME_DB;
+      const app = document.getElementById("app");
+      const modalRoot = document.getElementById("modalRoot");
+
+      const requiredLists = [
+        "firstNames",
+        "lastNames",
+        "jobs",
+        "races",
+        "genders",
+        "personalities",
+        "encounterNames"
+      ];
+
+      const invalidDatabase =
+        !GAME_DB ||
+        requiredLists.some(
+          key => !Array.isArray(GAME_DB[key]) || GAME_DB[key].length === 0
+        ) ||
+        !GAME_DB.items ||
+        !GAME_DB.difficulties;
+
+      if (invalidDatabase) {
+        app.innerHTML = `
+          <section class="title-screen">
+            <div class="panel" style="max-width:430px;text-align:center">
+              <h1 class="page-title">게임 데이터를 불러오지 못했습니다.</h1>
+              <p class="page-subtitle">
+                <strong>game-db.js</strong> 파일이 index.html과 같은 폴더에 있는지 확인해 주세요.
+              </p>
+            </div>
+          </section>
+        `;
+        return;
+      }
+
+      const STARTING_GOLD = Number(GAME_DB.settings?.startingGold) || 300;
+      const GACHA_COST = Number(GAME_DB.settings?.gachaCost) || 10;
+      const ITEM_DEFS = GAME_DB.items;
+      const DIFFICULTIES = GAME_DB.difficulties;
+      const ENCOUNTER_NAMES = GAME_DB.encounterNames;
+
+      let currentScreen = "title";
+      let selectedDungeonKey = null;
+      let modalState = null;
+
+      function uid() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return window.crypto.randomUUID();
+        }
+
+        return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function pick(list) {
+        return list[randomInt(0, list.length - 1)];
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function formatDateTime(value) {
+        if (!value) {
+          return "기록 없음";
+        }
+
+        try {
+          return new Intl.DateTimeFormat("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          }).format(new Date(value));
+        } catch {
+          return "기록 없음";
+        }
+      }
+
+      function findDbEntry(list, id) {
+        if (!id || !Array.isArray(list)) {
+          return null;
+        }
+
+        return list.find(entry => entry.id === id) || null;
+      }
+
+      function getCharacterName(character) {
+        if (character.legacyName) {
+          return character.legacyName;
+        }
+
+        const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
+        const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
+        const combined = [firstName?.name, lastName?.name].filter(Boolean).join(" ");
+
+        return combined || character.name || "이름 없는 모험가";
+      }
+
+      function getCharacterJob(character) {
+        return findDbEntry(GAME_DB.jobs, character.jobId) || {
+          id: null,
+          name: character.legacyJobName || character.job || "무직",
+          icon: character.legacyJobIcon || character.icon || "🧭",
+          description: "이전 버전에서 모집된 모험가의 직업입니다."
+        };
+      }
+
+      function getCharacterProfile(character) {
+        return {
+          name: getCharacterName(character),
+          job: getCharacterJob(character),
+          race: findDbEntry(GAME_DB.races, character.raceId) || {
+            id: null,
+            name: "미상",
+            description: ""
+          },
+          gender: findDbEntry(GAME_DB.genders, character.genderId) || {
+            id: null,
+            name: "미상"
+          },
+          personality: findDbEntry(GAME_DB.personalities, character.personalityId) || {
+            id: null,
+            name: "성격 미상",
+            description: ""
+          }
+        };
+      }
+
+      function characterSnapshot(character, injuredBeforeRecovery = character.injured) {
+        const profile = getCharacterProfile(character);
+
+        return {
+          id: character.id,
+          name: profile.name,
+          icon: profile.job.icon,
+          job: profile.job.name,
+          race: profile.race.name,
+          gender: profile.gender.name,
+          personality: profile.personality.name,
+          alive: character.alive,
+          trauma: character.trauma,
+          injured: Boolean(injuredBeforeRecovery),
+          successCount: Number(character.successCount) || 0,
+          deathRecord: character.deathRecord || null
+        };
+      }
+
+      function defaultState() {
+        return {
+          saveVersion: SAVE_VERSION,
+          gold: STARTING_GOLD,
+          inventory: {
+            rope: 0,
+            bandage: 0,
+            lockpick: 0
+          },
+          selectedItem: null,
+          selectedDifficulty: "easy",
+          characters: [],
+          partyIds: [],
+          dungeon: null,
+          lastSummary: null,
+          log: []
+        };
+      }
+
+      function migrateCharacter(character) {
+        const firstName = findDbEntry(GAME_DB.firstNames, character.firstNameId);
+        const lastName = findDbEntry(GAME_DB.lastNames, character.lastNameId);
+        const matchedJob =
+          findDbEntry(GAME_DB.jobs, character.jobId) ||
+          GAME_DB.jobs.find(job => job.name === character.job);
+        const race = findDbEntry(GAME_DB.races, character.raceId);
+        const gender = findDbEntry(GAME_DB.genders, character.genderId);
+        const personality = findDbEntry(GAME_DB.personalities, character.personalityId);
+
+        return {
+          ...character,
+          firstNameId: firstName?.id || null,
+          lastNameId: lastName?.id || null,
+          legacyName:
+            character.legacyName ||
+            (!(firstName && lastName) ? character.name || null : null),
+          jobId: matchedJob?.id || null,
+          legacyJobName:
+            character.legacyJobName ||
+            (!matchedJob ? character.job || null : null),
+          legacyJobIcon:
+            character.legacyJobIcon ||
+            (!matchedJob ? character.icon || "🧭" : null),
+          raceId: race?.id || pick(GAME_DB.races).id,
+          genderId: gender?.id || pick(GAME_DB.genders).id,
+          personalityId: personality?.id || pick(GAME_DB.personalities).id,
+          alive: character.alive !== false,
+          injured: Boolean(character.injured),
+          trauma: Boolean(character.trauma),
+          successCount: Number.isFinite(Number(character.successCount))
+            ? Number(character.successCount)
+            : 0,
+          deathRecord: character.deathRecord || null
+        };
+      }
+
+      function migrateDungeon(dungeon, selectedDifficulty) {
+        if (!dungeon) {
+          return null;
+        }
+
+        const difficultyKey = DIFFICULTIES[dungeon.difficulty]
+          ? dungeon.difficulty
+          : selectedDifficulty;
+        const difficulty = DIFFICULTIES[difficultyKey] || DIFFICULTIES.easy;
+
+        return {
+          carriedItem: null,
+          itemUsed: false,
+          bandageTargetMode: false,
+          ropeRerolled: false,
+          traumaSkips: {},
+          startingTraumaIds: [],
+          encounterReports: [],
+          difficulty: difficultyKey,
+          ...dungeon,
+          encounters: (dungeon.encounters || []).map(encounter => {
+            if (
+              Number.isFinite(Number(encounter.min)) &&
+              Number.isFinite(Number(encounter.max))
+            ) {
+              return {
+                ...encounter,
+                min: Number(encounter.min),
+                max: Number(encounter.max),
+                baseReward: Number.isFinite(Number(encounter.baseReward))
+                  ? Number(encounter.baseReward)
+                  : Math.max(
+                      1,
+                      Math.round(
+                        (Number(encounter.reward) || 1) /
+                          difficulty.rewardMultiplier
+                      )
+                    ),
+                reward: Number(encounter.reward) || 1
+              };
+            }
+
+            const radius = Math.floor(difficulty.rangeSize / 2);
+            const center = clamp(
+              Number(encounter.target) || 14,
+              4 + radius,
+              24 - radius
+            );
+            const oldReward = Number(encounter.reward) || 40;
+
+            return {
+              id: encounter.id || uid(),
+              name: encounter.name || pick(ENCOUNTER_NAMES),
+              min: center - radius,
+              max: center + radius,
+              baseReward: Math.max(
+                1,
+                Math.round(oldReward / difficulty.rewardMultiplier)
+              ),
+              reward: oldReward
+            };
+          })
+        };
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+
+          if (!raw) {
+            return defaultState();
+          }
+
+          const parsed = JSON.parse(raw);
+          const fresh = defaultState();
+          const selectedDifficulty = DIFFICULTIES[parsed.selectedDifficulty]
+            ? parsed.selectedDifficulty
+            : "easy";
+
+          const merged = {
+            ...fresh,
+            ...parsed,
+            saveVersion: SAVE_VERSION,
+            gold: Number.isFinite(Number(parsed.gold))
+              ? Number(parsed.gold)
+              : STARTING_GOLD,
+            inventory: {
+              ...fresh.inventory,
+              ...(parsed.inventory || {})
+            },
+            selectedDifficulty,
+            characters: Array.isArray(parsed.characters)
+              ? parsed.characters.map(migrateCharacter)
+              : [],
+            partyIds: Array.isArray(parsed.partyIds)
+              ? parsed.partyIds
+              : [],
+            log: Array.isArray(parsed.log) ? parsed.log : []
+          };
+
+          merged.dungeon = migrateDungeon(parsed.dungeon, selectedDifficulty);
+          return merged;
+        } catch (error) {
+          console.warn("저장 데이터를 불러오지 못했습니다.", error);
+          return defaultState();
+        }
+      }
+
+      let state = loadState();
+
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function addLog(text) {
+        state.log.unshift({
+          id: uid(),
+          time: new Date().toISOString(),
+          text
+        });
+        state.log = state.log.slice(0, 100);
+      }
+
+      function normalizeState() {
+        state.partyIds = state.partyIds
+          .filter(id => {
+            const character = state.characters.find(entry => entry.id === id);
+            return Boolean(character && character.alive);
+          })
+          .slice(0, 4);
+
+        if (
+          state.selectedItem &&
+          (state.inventory[state.selectedItem] || 0) <= 0 &&
+          !state.dungeon
+        ) {
+          state.selectedItem = null;
+        }
+
+        if (state.dungeon) {
+          currentScreen = "adventure";
+        }
+      }
+
+      function livingCharacters() {
+        return state.characters.filter(character => character.alive);
+      }
+
+      function deadCharacters() {
+        return state.characters.filter(character => !character.alive);
+      }
+
+      function alivePartyMembers() {
+        return state.partyIds
+          .map(id => state.characters.find(character => character.id === id))
+          .filter(character => character && character.alive);
+      }
+
+      function createCharacter() {
+        return {
+          id: uid(),
+          firstNameId: pick(GAME_DB.firstNames).id,
+          lastNameId: pick(GAME_DB.lastNames).id,
+          jobId: pick(GAME_DB.jobs).id,
+          raceId: pick(GAME_DB.races).id,
+          genderId: pick(GAME_DB.genders).id,
+          personalityId: pick(GAME_DB.personalities).id,
+          alive: true,
+          injured: false,
+          trauma: false,
+          successCount: 0,
+          deathRecord: null
+        };
+      }
+
+      function renderTopbar(title, backAction = "back-hall") {
+        return `
+          <header class="topbar">
+            <div class="gold-box">
+              <div class="gold-icon">🪙</div>
+              <div class="gold-copy">
+                <span>${escapeHtml(title)}</span>
+                <strong>${state.gold.toLocaleString("ko-KR")} G</strong>
+              </div>
+            </div>
+
+            <button class="back-btn" data-action="${backAction}">뒤로</button>
+          </header>
+        `;
+      }
+
+      function renderStatusChips(character) {
+        const chips = [];
+
+        if (character.trauma) {
+          chips.push('<span class="chip trauma">트라우마</span>');
+        }
+
+        if (character.injured) {
+          chips.push('<span class="chip injury">부상 ±2</span>');
+        }
+
+        if (!chips.length) {
+          chips.push('<span class="chip safe">정상</span>');
+        }
+
+        return chips.join("");
+      }
+
+      function goTo(screen) {
+        if (state.dungeon) {
+          currentScreen = "adventure";
+        } else {
+          currentScreen = screen;
+        }
+
+        modalState = null;
+        selectedDungeonKey = null;
+        render();
+      }
+
+      function showModal(type, payload = {}) {
+        modalState = { type, ...payload };
+        renderModal();
+      }
+
+      function closeModal() {
+        modalState = null;
+        modalRoot.innerHTML = "";
+      }
+
+      function recruitCharacter() {
+        const livingCount = livingCharacters().length;
+
+        if (livingCount >= MAX_LIVING_ADVENTURERS) {
+          showModal("notice", {
+            title: "모험가 정원 초과",
+            text: "길드의 모험가 정원이 가득 찼습니다.",
+            icon: "🚫"
+          });
+          return;
+        }
+
+        if (state.gold < GACHA_COST) {
+          showModal("notice", {
+            title: "골드 부족",
+            text: `모험가 소집에는 ${GACHA_COST}G가 필요합니다.`,
+            icon: "🪙"
+          });
+          return;
+        }
+
+        const newcomer = createCharacter();
+        state.gold -= GACHA_COST;
+        state.characters.push(newcomer);
+        addLog(`${GACHA_COST}G를 사용해 ${getCharacterName(newcomer)}을 소집했습니다.`);
+        save();
+
+        showModal("recruit", { characterId: newcomer.id });
+        render();
+      }
+
+      function toggleParty(characterId) {
+        if (state.dungeon) {
+          return;
+        }
+
+        const character = state.characters.find(entry => entry.id === characterId);
+
+        if (!character || !character.alive) {
+          return;
+        }
+
+        const index = state.partyIds.indexOf(characterId);
+
+        if (index >= 0) {
+          state.partyIds.splice(index, 1);
+        } else if (state.partyIds.length < 4) {
+          state.partyIds.push(characterId);
+        } else {
+          showModal("notice", {
+            title: "파티 정원 초과",
+            text: "파티에는 최대 4명만 등록할 수 있습니다.",
+            icon: "👥"
+          });
+          return;
+        }
+
+        save();
+        render();
+      }
+
+      function selectRegisteredItem(key) {
+        if (key === "none") {
+          state.selectedItem = null;
+        } else if (ITEM_DEFS[key] && (state.inventory[key] || 0) > 0) {
+          state.selectedItem = key;
+        }
+
+        save();
+        renderModal();
+      }
+
+      function buyItem(key) {
+        const item = ITEM_DEFS[key];
+
+        if (!item) {
+          return;
+        }
+
+        if (state.gold < item.price) {
+          showModal("notice", {
+            title: "골드 부족",
+            text: `${item.name} 구매에는 ${item.price}G가 필요합니다.`,
+            icon: item.icon
+          });
+          return;
+        }
+
+        state.gold -= item.price;
+        state.inventory[key] = (state.inventory[key] || 0) + 1;
+        addLog(`${item.name} 1개를 ${item.price}G에 구매했습니다.`);
+        save();
+        render();
+        renderModal();
+      }
+
+      function sellItem(key) {
+        const item = ITEM_DEFS[key];
+
+        if (!item || (state.inventory[key] || 0) <= 0) {
+          return;
+        }
+
+        state.inventory[key] -= 1;
+        state.gold += item.price;
+
+        if (state.selectedItem === key && state.inventory[key] <= 0) {
+          state.selectedItem = null;
+        }
+
+        addLog(`${item.name} 1개를 ${item.price}G에 판매했습니다.`);
+        save();
+        render();
+        renderModal();
+      }
+
+      function generateEncounter(difficultyKey) {
+        const difficulty = DIFFICULTIES[difficultyKey] || DIFFICULTIES.easy;
+        const radius = Math.floor(difficulty.rangeSize / 2);
+        const center = randomInt(4 + radius, 24 - radius);
+        const baseReward = randomInt(28, 42);
+
+        return {
+          id: uid(),
+          name: pick(ENCOUNTER_NAMES),
+          min: center - radius,
+          max: center + radius,
+          baseReward,
+          reward: Math.floor(baseReward * difficulty.rewardMultiplier)
+        };
+      }
+
+      function startDungeon(difficultyKey) {
+        if (state.dungeon) {
+          return;
+        }
+
+        const members = alivePartyMembers();
+
+        if (members.length !== 4) {
+          showModal("notice", {
+            title: "파티 편성 필요",
+            text: "던전에 출발하려면 생존한 파티원 4명이 필요합니다.",
+            icon: "👥"
+          });
+          return;
+        }
+
+        const difficulty = DIFFICULTIES[difficultyKey];
+
+        if (!difficulty) {
+          return;
+        }
+
+        let carriedItem = state.selectedItem;
+
+        if (carriedItem && (state.inventory[carriedItem] || 0) <= 0) {
+          carriedItem = null;
+          state.selectedItem = null;
+        }
+
+        members.forEach(character => {
+          character.injured = false;
+        });
+
+        state.selectedDifficulty = difficultyKey;
+        state.lastSummary = null;
+        state.dungeon = {
+          encounters: [
+            generateEncounter(difficultyKey),
+            generateEncounter(difficultyKey),
+            generateEncounter(difficultyKey)
+          ],
+          difficulty: difficultyKey,
+          index: 0,
+          phase: "ready",
+          earnedGold: 0,
+          lastRolls: [],
+          lastSuccess: null,
+          survivalResults: [],
+          startedPartyIds: [...state.partyIds],
+          startingTraumaIds: members
+            .filter(character => character.trauma)
+            .map(character => character.id),
+          encounterReports: [],
+          carriedItem,
+          itemUsed: false,
+          bandageTargetMode: false,
+          ropeRerolled: false,
+          traumaSkips: {}
+        };
+
+        addLog(
+          `${members.map(getCharacterName).join(", ")} 파티가 ${difficulty.name} 던전에 입장했습니다.`
+        );
+
+        save();
+        closeModal();
+        currentScreen = "adventure";
+        render();
+      }
+
+      function prepareTraumaSkips() {
+        const dungeon = state.dungeon;
+
+        if (!dungeon) {
+          return;
+        }
+
+        dungeon.traumaSkips = dungeon.traumaSkips || {};
+
+        alivePartyMembers().forEach(character => {
+          if (
+            character.trauma &&
+            !(character.id in dungeon.traumaSkips)
+          ) {
+            dungeon.traumaSkips[character.id] = Math.random() < 0.5;
+          }
+        });
+      }
+
+      function rollPartyDice() {
+        prepareTraumaSkips();
+        const traumaSkips = state.dungeon?.traumaSkips || {};
+
+        return alivePartyMembers().map(character => {
+          const skipped = Boolean(
+            character.trauma && traumaSkips[character.id]
+          );
+
+          if (skipped) {
+            return {
+              characterId: character.id,
+              name: getCharacterName(character),
+              raw: null,
+              modifier: 0,
+              final: 0,
+              skipped: true
+            };
+          }
+
+          const raw = randomInt(1, 6);
+          const modifier = character.injured
+            ? Math.random() < 0.5
+              ? -2
+              : 2
+            : 0;
+
+          return {
+            characterId: character.id,
+            name: getCharacterName(character),
+            raw,
+            modifier,
+            final: clamp(raw + modifier, 1, 6),
+            skipped: false
+          };
+        });
+      }
+
+      function rollEncounter() {
+        const dungeon = state.dungeon;
+
+        if (!dungeon || dungeon.phase !== "ready") {
+          return;
+        }
+
+        dungeon.bandageTargetMode = false;
+        dungeon.lastRolls = rollPartyDice();
+        dungeon.lastSuccess = null;
+        dungeon.survivalResults = [];
+
+        const ropeReady =
+          dungeon.carriedItem === "rope" &&
+          !dungeon.itemUsed &&
+          (state.inventory.rope || 0) > 0;
+
+        if (ropeReady) {
+          dungeon.phase = "rolled";
+          save();
+          render();
+          return;
+        }
+
+        resolveCurrentRolls();
+      }
+
+      function resolveCurrentRolls() {
+        const dungeon = state.dungeon;
+
+        if (
+          !dungeon ||
+          !["ready", "rolled"].includes(dungeon.phase) ||
+          !dungeon.lastRolls.length
+        ) {
+          return;
+        }
+
+        const encounter = dungeon.encounters[dungeon.index];
+        const total = dungeon.lastRolls.reduce(
+          (sum, roll) => sum + roll.final,
+          0
+        );
+        const success = total >= encounter.min && total <= encounter.max;
+
+        dungeon.lastSuccess = success;
+        dungeon.survivalResults = [];
+
+        if (success) {
+          dungeon.earnedGold += encounter.reward;
+          addLog(
+            `${encounter.name} 성공: 합계 ${total}, 성공 범위 ${encounter.min}~${encounter.max}, +${encounter.reward}G`
+          );
+        } else {
+          const difficulty = DIFFICULTIES[dungeon.difficulty] || DIFFICULTIES.easy;
+          const results = alivePartyMembers().map(character => {
+            const survivalRoll = randomInt(1, 6);
+            let result = "safe";
+
+            if (survivalRoll === 1) {
+              character.alive = false;
+              character.injured = false;
+              result = "dead";
+              character.deathRecord = {
+                difficultyKey: dungeon.difficulty,
+                difficultyName: difficulty.name,
+                encounterName: encounter.name,
+                encounterIndex: dungeon.index + 1,
+                survivalRoll,
+                diedAt: new Date().toISOString(),
+                successCount: Number(character.successCount) || 0
+              };
+            } else if (survivalRoll === 2) {
+              character.trauma = true;
+              result = "trauma";
+            } else if (survivalRoll === 3) {
+              character.injured = true;
+              result = "injured";
+            }
+
+            return {
+              characterId: character.id,
+              name: getCharacterName(character),
+              roll: survivalRoll,
+              result
+            };
+          });
+
+          dungeon.survivalResults = results;
+          addLog(`${encounter.name} 실패: 합계 ${total}, 생존 판정을 진행했습니다.`);
+        }
+
+        dungeon.encounterReports[dungeon.index] = {
+          index: dungeon.index,
+          name: encounter.name,
+          min: encounter.min,
+          max: encounter.max,
+          reward: encounter.reward,
+          total,
+          success,
+          rolls: dungeon.lastRolls.map(roll => ({ ...roll })),
+          survivalResults: dungeon.survivalResults.map(result => ({ ...result }))
+        };
+
+        dungeon.phase = "resolved";
+        save();
+        render();
+      }
+
+      function confirmRolledResult() {
+        if (state.dungeon?.phase === "rolled") {
+          resolveCurrentRolls();
+        }
+      }
+
+      function useRope() {
+        const dungeon = state.dungeon;
+
+        if (
+          !dungeon ||
+          dungeon.phase !== "rolled" ||
+          dungeon.carriedItem !== "rope" ||
+          dungeon.itemUsed ||
+          (state.inventory.rope || 0) <= 0
+        ) {
+          return;
+        }
+
+        state.inventory.rope -= 1;
+        dungeon.itemUsed = true;
+        dungeon.ropeRerolled = true;
+        dungeon.lastRolls = rollPartyDice();
+        addLog("밧줄 1개를 사용해 파티 전체의 주사위를 다시 굴렸습니다.");
+        resolveCurrentRolls();
+      }
+
+      function showBandageTargets() {
+        const dungeon = state.dungeon;
+
+        if (
+          !dungeon ||
+          dungeon.phase !== "ready" ||
+          dungeon.carriedItem !== "bandage" ||
+          dungeon.itemUsed ||
+          (state.inventory.bandage || 0) <= 0
+        ) {
+          return;
+        }
+
+        const injuredIds = alivePartyMembers()
+          .filter(character => character.injured)
+          .map(character => character.id);
+
+        if (!injuredIds.length) {
+          showModal("notice", {
+            title: "치료 대상 없음",
+            text: "현재 부상한 파티원이 없습니다.",
+            icon: "🩹"
+          });
+          return;
+        }
+
+        showModal("bandage", { injuredIds });
+      }
+
+      function useBandage(characterId) {
+        const dungeon = state.dungeon;
+        const character = state.characters.find(entry => entry.id === characterId);
+
+        if (
+          !dungeon ||
+          dungeon.phase !== "ready" ||
+          dungeon.carriedItem !== "bandage" ||
+          dungeon.itemUsed ||
+          (state.inventory.bandage || 0) <= 0 ||
+          !character ||
+          !character.alive ||
+          !character.injured ||
+          !state.partyIds.includes(character.id)
+        ) {
+          return;
+        }
+
+        state.inventory.bandage -= 1;
+        dungeon.itemUsed = true;
+        character.injured = false;
+        addLog(`붕대 1개를 사용해 ${getCharacterName(character)}의 부상을 치료했습니다.`);
+        save();
+        closeModal();
+        render();
+      }
+
+      function advanceDungeon() {
+        const dungeon = state.dungeon;
+
+        if (!dungeon || dungeon.phase !== "resolved") {
+          return;
+        }
+
+        const noSurvivors = alivePartyMembers().length === 0;
+        const isLast = dungeon.index >= dungeon.encounters.length - 1;
+
+        if (noSurvivors || isLast) {
+          finishDungeon(noSurvivors);
+          return;
+        }
+
+        dungeon.index += 1;
+        dungeon.phase = "ready";
+        dungeon.lastRolls = [];
+        dungeon.lastSuccess = null;
+        dungeon.survivalResults = [];
+        dungeon.traumaSkips = {};
+        save();
+        render();
+      }
+
+      function finishDungeon(partyWiped = false) {
+        const dungeon = state.dungeon;
+
+        if (!dungeon) {
+          return;
+        }
+
+        const startedMembers = dungeon.startedPartyIds
+          .map(id => state.characters.find(character => character.id === id))
+          .filter(Boolean);
+        const survivors = startedMembers.filter(character => character.alive);
+        const injuredIds = survivors
+          .filter(character => character.injured)
+          .map(character => character.id);
+        const injuryMultiplier = Math.max(0.4, 1 - injuredIds.length * 0.15);
+
+        if (!partyWiped) {
+          survivors.forEach(character => {
+            character.successCount = (character.successCount || 0) + 1;
+          });
+        }
+
+        let lockpickUsed = false;
+        let boostedGold = dungeon.earnedGold;
+
+        if (
+          !partyWiped &&
+          dungeon.carriedItem === "lockpick" &&
+          !dungeon.itemUsed &&
+          (state.inventory.lockpick || 0) > 0
+        ) {
+          state.inventory.lockpick -= 1;
+          lockpickUsed = true;
+          boostedGold = Math.floor(dungeon.earnedGold * 1.5);
+        }
+
+        const finalGold = partyWiped
+          ? 0
+          : Math.floor(boostedGold * injuryMultiplier);
+
+        state.gold += finalGold;
+
+        const startingTraumaIds = new Set(dungeon.startingTraumaIds || []);
+        const newTraumaIds = startedMembers
+          .filter(
+            character =>
+              character.trauma && !startingTraumaIds.has(character.id)
+          )
+          .map(character => character.id);
+
+        const snapshots = startedMembers.map(character =>
+          characterSnapshot(character, injuredIds.includes(character.id))
+        );
+
+        state.lastSummary = {
+          difficulty: dungeon.difficulty || "easy",
+          earnedGold: dungeon.earnedGold,
+          boostedGold,
+          lockpickUsed,
+          injuredCount: injuredIds.length,
+          multiplier: injuryMultiplier,
+          finalGold,
+          partyWiped,
+          survivors: survivors.length,
+          successAwarded: partyWiped ? 0 : survivors.length,
+          carriedItem: dungeon.carriedItem,
+          memberSnapshots: snapshots,
+          deadIds: startedMembers
+            .filter(character => !character.alive)
+            .map(character => character.id),
+          injuredIds,
+          newTraumaIds,
+          encounterReports: (dungeon.encounterReports || []).filter(Boolean),
+          completedAt: new Date().toISOString()
+        };
+
+        state.characters.forEach(character => {
+          if (character.alive) {
+            character.injured = false;
+          }
+        });
+
+        state.partyIds = state.partyIds.filter(id => {
+          const character = state.characters.find(entry => entry.id === id);
+          return Boolean(character && character.alive);
+        });
+
+        if (
+          dungeon.carriedItem &&
+          (state.inventory[dungeon.carriedItem] || 0) <= 0
+        ) {
+          state.selectedItem = null;
+        }
+
+        addLog(
+          partyWiped
+            ? `원정대 전멸. 누적 보상 ${dungeon.earnedGold}G를 회수하지 못했습니다.`
+            : `던전 정산 완료: 최종 ${finalGold}G 획득.`
+        );
+
+        state.dungeon = null;
+        currentScreen = "result";
+        save();
+        render();
+      }
+
+      function renderTitle() {
+        app.innerHTML = `
+          <section class="title-screen">
+            <div class="title-card">
+              <div class="title-emblem">🏰</div>
+              <h1>길드 마스터<br>시뮬레이터</h1>
+              <p>
+                모험가를 소집하고 파티를 편성해<br>
+                위험한 던전으로 보내세요.
+              </p>
+              <button class="btn primary start-btn" data-action="start-game">
+                게임 시작
+              </button>
+              <div class="title-version">SAVE DATA · LOCAL STORAGE</div>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderHall() {
+        const living = livingCharacters();
+        const dead = deadCharacters();
+        const party = alivePartyMembers();
+        const selectedItem = state.selectedItem
+          ? ITEM_DEFS[state.selectedItem]
+          : null;
+
+        app.innerHTML = `
+          <section class="screen screen-layout">
+            ${renderTopbar("길드 메인 홀", "back-title")}
+
+            <main class="content">
+              <div class="hall-content">
+                <section class="hall-hero">
+                  <small>GUILD MAIN HALL</small>
+                  <h1>길드 메인 홀</h1>
+                  <p>
+                    길드의 인원과 장비를 관리하고 다음 원정을 준비하세요.
+                  </p>
+
+                  <div class="hall-stats">
+                    <div class="hall-stat">
+                      <span>생존 모험가</span>
+                      <strong>${living.length}/${MAX_LIVING_ADVENTURERS}명</strong>
+                    </div>
+                    <div class="hall-stat">
+                      <span>편성 파티</span>
+                      <strong>${party.length}/4명</strong>
+                    </div>
+                    <div class="hall-stat">
+                      <span>등록 도구</span>
+                      <strong>${selectedItem ? `${selectedItem.icon} ${escapeHtml(selectedItem.name)}` : "없음"}</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="hall-art">
+                  <div>
+                    <span>🛡️</span>
+                    <p>길드의 운명은 마스터의 선택에 달려 있습니다.</p>
+                  </div>
+                </section>
+
+                <nav class="hall-menu">
+                  <button class="hall-menu-btn" data-action="go-memorial">
+                    <span class="icon">🪦</span>
+                    <span>
+                      <strong>명예의 전당</strong>
+                      <small>사망자 ${dead.length}명</small>
+                    </span>
+                  </button>
+
+                  <button class="hall-menu-btn" data-action="go-party">
+                    <span class="icon">👥</span>
+                    <span>
+                      <strong>파티 관리</strong>
+                      <small>모험가 소집과 편성</small>
+                    </span>
+                  </button>
+
+                  <button class="hall-menu-btn" data-action="go-shop">
+                    <span class="icon">🏘️</span>
+                    <span>
+                      <strong>상점가</strong>
+                      <small>도구 구매와 판매</small>
+                    </span>
+                  </button>
+
+                  <button class="hall-menu-btn" data-action="go-map">
+                    <span class="icon">🗺️</span>
+                    <span>
+                      <strong>지도</strong>
+                      <small>던전 선택과 출발</small>
+                    </span>
+                  </button>
+                </nav>
+              </div>
+            </main>
+          </section>
+        `;
+      }
+
+      function renderMemorial() {
+        const dead = deadCharacters();
+        const entries = dead.length
+          ? dead
+              .map(character => {
+                const profile = getCharacterProfile(character);
+                const record = character.deathRecord;
+                const locationText = record
+                  ? `${record.difficultyName || "미상"} · ${record.encounterName || "인카운터 미상"}`
+                  : "이전 기록 · 사망 장소 불명";
+
+                return `
+                  <article class="memorial-entry" data-memorial-id="${character.id}">
+                    <button class="memorial-summary" data-action="toggle-memorial" data-id="${character.id}">
+                      <span class="avatar">${profile.job.icon}</span>
+                      <span>
+                        <h3>🪦 ${escapeHtml(profile.name)}</h3>
+                        <p>${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)} · 모험 성공 ${character.successCount || 0}회</p>
+                      </span>
+                      <span class="expand-mark">▼</span>
+                    </button>
+
+                    <div class="memorial-detail">
+                      <div class="detail-grid">
+                        <div class="detail-cell">
+                          <span>성별 · 종족</span>
+                          <strong>${escapeHtml(profile.gender.name)} · ${escapeHtml(profile.race.name)}</strong>
+                        </div>
+                        <div class="detail-cell">
+                          <span>직업 · 성격</span>
+                          <strong>${escapeHtml(profile.job.name)} · ${escapeHtml(profile.personality.name)}</strong>
+                        </div>
+                        <div class="detail-cell">
+                          <span>사망 장소</span>
+                          <strong>${escapeHtml(locationText)}</strong>
+                        </div>
+                        <div class="detail-cell">
+                          <span>사망 판정</span>
+                          <strong>${record ? `${record.encounterIndex || "?"}차 · 주사위 ${record.survivalRoll || "?"}` : "기록 없음"}</strong>
+                        </div>
+                        <div class="detail-cell" style="grid-column:1/-1">
+                          <span>사망 시각</span>
+                          <strong>${record ? escapeHtml(formatDateTime(record.diedAt)) : "기록 없음"}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")
+          : `
+              <div class="empty">
+                아직 명예의 전당에 기록된 모험가가 없습니다.
+              </div>
+            `;
+
+        app.innerHTML = `
+          <section class="screen screen-layout">
+            ${renderTopbar("명예의 전당")}
+            <main class="content">
+              <h1 class="page-title">명예의 전당</h1>
+              <p class="page-subtitle">
+                사망한 모험가를 터치하면 생전 정보와 사망 기록을 확인할 수 있습니다.
+              </p>
+              <div class="memorial-list">${entries}</div>
+            </main>
+          </section>
+        `;
+      }
+
+      function renderParty() {
+        const living = livingCharacters();
+        const party = alivePartyMembers();
+
+        const slots = Array.from({ length: 4 }, (_, index) => {
+          const character = party[index];
+
+          if (!character) {
+            return `<div class="party-slot empty-slot">빈 자리</div>`;
+          }
+
+          const profile = getCharacterProfile(character);
+          return `
+            <button class="party-slot filled" data-action="toggle-party" data-id="${character.id}">
+              <span class="party-avatar">${profile.job.icon}</span>
+              <h3>${escapeHtml(profile.name)}</h3>
+              <p>${escapeHtml(profile.job.name)}</p>
+            </button>
+          `;
+        }).join("");
+
+        const adventurers = living.length
+          ? living
+              .map(character => {
+                const profile = getCharacterProfile(character);
+                const selected = state.partyIds.includes(character.id);
+
+                return `
+                  <button class="adventurer-card ${selected ? "selected" : ""}" data-action="toggle-party" data-id="${character.id}">
+                    <span class="adventurer-avatar">${profile.job.icon}</span>
+                    <span class="adventurer-meta">
+                      <h3>${escapeHtml(profile.name)}</h3>
+                      <p>${escapeHtml(profile.gender.name)} · ${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)}</p>
+                      <div class="chip-row">
+                        ${renderStatusChips(character)}
+                        <span class="chip">성격 ${escapeHtml(profile.personality.name)}</span>
+                        <span class="chip">성공 ${character.successCount || 0}회</span>
+                      </div>
+                    </span>
+                    <span class="party-toggle-label">${selected ? "해제" : "등록"}</span>
+                  </button>
+                `;
+              })
+              .join("")
+          : `<div class="empty">대기 중인 모험가가 없습니다.<br>하단의 모험가 소집 버튼을 눌러주세요.</div>`;
+
+        const recruitDisabled =
+          living.length >= MAX_LIVING_ADVENTURERS || state.gold < GACHA_COST;
+
+        app.innerHTML = `
+          <section class="screen screen-layout with-bottom">
+            ${renderTopbar("파티 관리")}
+
+            <main class="content no-scroll">
+              <div class="party-content">
+                <section class="panel">
+                  <div class="section-head">
+                    <div>
+                      <h2>원정 파티</h2>
+                      <p>등록된 파티원을 누르면 대기 명단으로 돌아갑니다.</p>
+                    </div>
+                    <span class="chip">${party.length}/4명</span>
+                  </div>
+                  <div class="party-strip">${slots}</div>
+                </section>
+
+                <section class="panel adventurer-list-wrap">
+                  <div class="section-head">
+                    <div>
+                      <h2>대기 중인 모험가</h2>
+                      <p>터치하여 파티 등록 또는 해제 · 보유 ${living.length}/${MAX_LIVING_ADVENTURERS}</p>
+                    </div>
+                  </div>
+                  <div class="adventurer-list">${adventurers}</div>
+                </section>
+              </div>
+            </main>
+
+            <footer class="bottom-actions">
+              <button class="btn primary" data-action="recruit" ${recruitDisabled ? "disabled" : ""}>
+                모험가 소집 · ${GACHA_COST}G
+              </button>
+              <button class="btn blue" data-action="open-item-register">
+                아이템 등록
+              </button>
+            </footer>
+          </section>
+        `;
+      }
+
+      function renderShop() {
+        app.innerHTML = `
+          <section class="screen screen-layout">
+            ${renderTopbar("상점가")}
+            <main class="content">
+              <section class="city-map">
+                <div class="map-title">
+                  <h1>길드 상점가</h1>
+                  <p>시설을 터치하여 이용합니다.</p>
+                </div>
+
+                <button class="place-btn place-blacksmith" data-action="open-unimplemented" data-name="대장장이">
+                  <span class="place-icon">⚒️</span>
+                  <strong>대장장이</strong>
+                  <small>무기와 방어구</small>
+                </button>
+
+                <button class="place-btn place-toolshop" data-action="open-tool-shop">
+                  <span class="place-icon">🧰</span>
+                  <strong>도구점</strong>
+                  <small>원정 도구</small>
+                </button>
+
+                <button class="place-btn place-restaurant" data-action="open-unimplemented" data-name="식당">
+                  <span class="place-icon">🍲</span>
+                  <strong>식당</strong>
+                  <small>식사와 휴식</small>
+                </button>
+
+                <button class="place-btn place-clinic" data-action="open-unimplemented" data-name="치료소">
+                  <span class="place-icon">🏥</span>
+                  <strong>치료소</strong>
+                  <small>부상과 치료</small>
+                </button>
+              </section>
+            </main>
+          </section>
+        `;
+      }
+
+      function renderMap() {
+        const party = alivePartyMembers();
+        const partyHtml = Array.from({ length: 4 }, (_, index) => {
+          const character = party[index];
+
+          if (!character) {
+            return `
+              <div class="map-party-member">
+                <span class="party-avatar">＋</span>
+                <strong>빈 자리</strong>
+                <span>미편성</span>
+              </div>
+            `;
+          }
+
+          const profile = getCharacterProfile(character);
+          return `
+            <div class="map-party-member">
+              <span class="party-avatar">${profile.job.icon}</span>
+              <strong>${escapeHtml(profile.name)}</strong>
+              <span>${escapeHtml(profile.job.name)}</span>
+            </div>
+          `;
+        }).join("");
+
+        app.innerHTML = `
+          <section class="screen screen-layout">
+            ${renderTopbar("지도")}
+            <main class="content">
+              <section class="map-party">
+                <div class="map-party-list">${partyHtml}</div>
+                <button class="btn secondary small" data-action="go-party">파티 관리</button>
+              </section>
+
+              <section class="dungeon-map">
+                <div class="map-title">
+                  <h1>모험 지도</h1>
+                  <p>던전을 터치하여 정보를 확인합니다.</p>
+                </div>
+
+                <button class="dungeon-btn dungeon-easy" data-action="open-dungeon" data-key="easy">
+                  <span class="place-icon">🌿</span>
+                  <strong>이지 던전</strong>
+                  <small>안정적인 원정</small>
+                </button>
+
+                <button class="dungeon-btn dungeon-normal" data-action="open-dungeon" data-key="normal">
+                  <span class="place-icon">🌙</span>
+                  <strong>노멀 던전</strong>
+                  <small>균형 잡힌 위험</small>
+                </button>
+
+                <button class="dungeon-btn dungeon-hard" data-action="open-dungeon" data-key="hard">
+                  <span class="place-icon">🔥</span>
+                  <strong>하드 던전</strong>
+                  <small>높은 위험과 보상</small>
+                </button>
+              </section>
+            </main>
+          </section>
+        `;
+      }
+
+      function renderAdventure() {
+        const dungeon = state.dungeon;
+
+        if (!dungeon) {
+          currentScreen = state.lastSummary ? "result" : "hall";
+          render();
+          return;
+        }
+
+        const encounter = dungeon.encounters[dungeon.index];
+        const difficulty = DIFFICULTIES[dungeon.difficulty] || DIFFICULTIES.easy;
+        const party = dungeon.startedPartyIds
+          .map(id => state.characters.find(character => character.id === id))
+          .filter(Boolean);
+        const total = dungeon.lastRolls.reduce((sum, roll) => sum + roll.final, 0);
+        const previewSuccess = total >= encounter.min && total <= encounter.max;
+        const noSurvivors = alivePartyMembers().length === 0;
+        const isLast = dungeon.index >= dungeon.encounters.length - 1;
+
+        const progressHtml = dungeon.encounters
+          .map((entry, index) => {
+            let className = "";
+
+            if (
+              index < dungeon.index ||
+              (index === dungeon.index && dungeon.phase === "resolved")
+            ) {
+              className = "done";
+            }
+
+            if (
+              index === dungeon.index &&
+              ["ready", "rolled"].includes(dungeon.phase)
+            ) {
+              className = "current";
+            }
+
+            return `<div class="progress-step ${className}">${index + 1}차</div>`;
+          })
+          .join("");
+
+        const partyHtml = party
+          .map(character => {
+            const profile = getCharacterProfile(character);
+            let status = "정상";
+
+            if (!character.alive) {
+              status = "사망";
+            } else if (character.injured && character.trauma) {
+              status = "부상 · 트라우마";
+            } else if (character.injured) {
+              status = "부상";
+            } else if (character.trauma) {
+              status = "트라우마";
+            }
+
+            return `
+              <div class="adventure-member ${character.alive ? "" : "dead-member"}">
+                <span class="party-avatar">${profile.job.icon}</span>
+                <strong>${escapeHtml(profile.name)}</strong>
+                <span>${escapeHtml(status)}</span>
+              </div>
+            `;
+          })
+          .join("");
+
+        const diceHtml = dungeon.lastRolls.length
+          ? dungeon.lastRolls
+              .map(roll => {
+                const character = state.characters.find(
+                  entry => entry.id === roll.characterId
+                );
+                const profile = character
+                  ? getCharacterProfile(character)
+                  : { job: { icon: "🎲" } };
+                const detail = roll.skipped
+                  ? "트라우마 발동 · 판정 0"
+                  : roll.modifier
+                    ? `원본 ${roll.raw} · ${roll.modifier > 0 ? "+2" : "-2"}`
+                    : "보정 없음";
+
+                return `
+                  <div class="die-card">
+                    <div>
+                      <strong>${profile.job.icon} ${escapeHtml(roll.name)}</strong>
+                      <span>${escapeHtml(detail)}</span>
+                    </div>
+                    <div class="die-face ${roll.skipped ? "skipped" : ""}">${roll.final}</div>
+                  </div>
+                `;
+              })
+              .join("")
+          : `<div class="empty" style="grid-column:1/-1;min-height:100px">주사위를 굴리면 결과가 표시됩니다.</div>`;
+
+        const survivalHtml = dungeon.survivalResults.length
+          ? `
+              <div class="survival-list">
+                ${dungeon.survivalResults
+                  .map(result => {
+                    const label =
+                      result.result === "dead"
+                        ? "사망"
+                        : result.result === "trauma"
+                          ? "트라우마"
+                          : result.result === "injured"
+                            ? "부상"
+                            : "무사 생존";
+                    const className =
+                      result.result === "safe" ? "safe" : result.result;
+
+                    return `
+                      <div class="survival-row">
+                        <span>${escapeHtml(result.name)} · 판정 ${result.roll}</span>
+                        <strong class="chip ${className === "dead" ? "dead" : className}">${label}</strong>
+                      </div>
+                    `;
+                  })
+                  .join("")}
+              </div>
+            `
+          : "";
+
+        let resultHtml = "";
+
+        if (dungeon.phase === "rolled") {
+          resultHtml = `
+            <div class="result-banner preview">
+              임시 합계 ${total} · ${previewSuccess ? "현재 성공" : "현재 실패"}<br>
+              밧줄을 사용하거나 현재 결과를 확정하세요.
+            </div>
+          `;
+        } else if (dungeon.phase === "resolved") {
+          resultHtml = `
+            <div class="result-banner ${dungeon.lastSuccess ? "success" : "failure"}">
+              ${
+                dungeon.lastSuccess
+                  ? `인카운터 성공 · 합계 ${total} · ${encounter.reward}G 확보`
+                  : `인카운터 실패 · 합계 ${total} · 생존 판정 완료`
+              }
+            </div>
+            ${survivalHtml}
+          `;
+        }
+
+        const item = dungeon.carriedItem ? ITEM_DEFS[dungeon.carriedItem] : null;
+        let itemButtonText = "아이템 없음";
+        let itemButtonDisabled = true;
+        let itemAction = "";
+
+        if (item) {
+          if (dungeon.itemUsed) {
+            itemButtonText = `${item.icon} 사용 완료`;
+          } else if (dungeon.carriedItem === "rope") {
+            itemButtonText = `${item.icon} 밧줄 사용`;
+            itemButtonDisabled = dungeon.phase !== "rolled";
+            itemAction = "use-rope";
+          } else if (dungeon.carriedItem === "bandage") {
+            itemButtonText = `${item.icon} 붕대 사용`;
+            itemButtonDisabled = dungeon.phase !== "ready";
+            itemAction = "use-bandage-modal";
+          } else if (dungeon.carriedItem === "lockpick") {
+            itemButtonText = `${item.icon} 완료 시 자동 사용`;
+            itemButtonDisabled = true;
+          }
+        }
+
+        let mainButtonText = "파티 주사위 굴리기";
+        let mainAction = "roll-encounter";
+
+        if (dungeon.phase === "rolled") {
+          mainButtonText = "현재 주사위 결과 확정";
+          mainAction = "confirm-roll";
+        } else if (dungeon.phase === "resolved") {
+          mainButtonText = noSurvivors || isLast
+            ? "던전 종료 · 결과 보기"
+            : "다음 인카운터";
+          mainAction = "advance-dungeon";
+        }
+
+        app.innerHTML = `
+          <section class="screen screen-layout with-bottom">
+            ${renderTopbar("모험", "adventure-back")}
+
+            <main class="content">
+              <div class="adventure-content">
+                <div class="progress-row">${progressHtml}</div>
+
+                <section class="panel">
+                  <div class="section-head">
+                    <div>
+                      <h2>파티원 정보</h2>
+                      <p>현재 생존 ${alivePartyMembers().length}명</p>
+                    </div>
+                  </div>
+                  <div class="adventure-party">${partyHtml}</div>
+                </section>
+
+                <section class="encounter-card">
+                  <small>${escapeHtml(difficulty.name)} · ENCOUNTER ${dungeon.index + 1}/3</small>
+                  <h1>${escapeHtml(encounter.name)}</h1>
+                  <p>파티 주사위 합계가 성공 범위 안에 들어가야 합니다.</p>
+
+                  <div class="encounter-stats">
+                    <div class="encounter-stat">
+                      <span>성공 범위</span>
+                      <strong>${encounter.min}~${encounter.max}</strong>
+                    </div>
+                    <div class="encounter-stat">
+                      <span>성공 보상</span>
+                      <strong>${encounter.reward}G</strong>
+                    </div>
+                    <div class="encounter-stat">
+                      <span>누적 보상</span>
+                      <strong>${dungeon.earnedGold}G</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="panel">
+                  <div class="active-tool">
+                    <span class="item-icon">${item ? item.icon : "✋"}</span>
+                    <span>
+                      <h3>${item ? escapeHtml(item.name) : "활성화된 도구 없음"}</h3>
+                      <p>${item ? escapeHtml(item.description) : "이번 원정에는 도구를 등록하지 않았습니다."}</p>
+                    </span>
+                    <span class="chip">${item ? (dungeon.itemUsed ? "사용됨" : "미사용") : "없음"}</span>
+                  </div>
+                </section>
+
+                <section class="panel">
+                  <div class="section-head">
+                    <div>
+                      <h2>주사위 정보</h2>
+                      <p>부상자는 D6에 무작위로 +2 또는 -2가 적용됩니다.</p>
+                    </div>
+                  </div>
+                  <div class="dice-grid">${diceHtml}</div>
+                  ${
+                    dungeon.lastRolls.length
+                      ? `
+                          <div class="roll-total">
+                            <span>파티 주사위 합계</span>
+                            <strong>${total}</strong>
+                          </div>
+                        `
+                      : ""
+                  }
+                  ${resultHtml}
+                </section>
+              </div>
+            </main>
+
+            <footer class="bottom-actions">
+              <button class="btn primary" data-action="${mainAction}">${mainButtonText}</button>
+              <button class="btn secondary" data-action="${itemAction}" ${itemButtonDisabled ? "disabled" : ""}>
+                ${itemButtonText}
+              </button>
+            </footer>
+          </section>
+        `;
+      }
+
+      function renderResult() {
+        const summary = state.lastSummary;
+
+        if (!summary) {
+          currentScreen = "hall";
+          render();
+          return;
+        }
+
+        const difficulty = DIFFICULTIES[summary.difficulty] || DIFFICULTIES.easy;
+        const snapshots = Array.isArray(summary.memberSnapshots)
+          ? summary.memberSnapshots
+          : [];
+        const deadIds = new Set(summary.deadIds || []);
+        const injuredIds = new Set(summary.injuredIds || []);
+        const newTraumaIds = new Set(summary.newTraumaIds || []);
+        const reports = Array.isArray(summary.encounterReports)
+          ? summary.encounterReports
+          : [];
+
+        const deadMembers = snapshots.filter(
+          member => deadIds.has(member.id) || !member.alive
+        );
+
+        const deadHtml = deadMembers.length
+          ? deadMembers
+              .map(member => `
+                <div class="result-member">
+                  <span class="result-avatar">${member.icon || "🧭"}</span>
+                  <span>
+                    <h3>${escapeHtml(member.name)}</h3>
+                    <p>${escapeHtml(member.race)} · ${escapeHtml(member.job)} · 모험 성공 ${member.successCount || 0}회</p>
+                  </span>
+                  <span class="chip dead">사망</span>
+                </div>
+              `)
+              .join("")
+          : `<div class="empty" style="min-height:90px">이번 원정의 사망자는 없습니다.</div>`;
+
+        const memberHtml = snapshots.length
+          ? snapshots
+              .map(member => {
+                const tags = [];
+
+                if (deadIds.has(member.id) || !member.alive) {
+                  tags.push('<span class="chip dead">사망</span>');
+                } else {
+                  tags.push('<span class="chip safe">생환</span>');
+                }
+
+                if (newTraumaIds.has(member.id)) {
+                  tags.push('<span class="chip trauma">신규 트라우마</span>');
+                } else if (member.trauma) {
+                  tags.push('<span class="chip trauma">트라우마</span>');
+                }
+
+                if (injuredIds.has(member.id)) {
+                  tags.push('<span class="chip injury">부상 후 회복</span>');
+                }
+
+                return `
+                  <div class="result-member">
+                    <span class="result-avatar">${member.icon || "🧭"}</span>
+                    <span>
+                      <h3>${escapeHtml(member.name)}</h3>
+                      <p>${escapeHtml(member.gender)} · ${escapeHtml(member.race)} · ${escapeHtml(member.job)}</p>
+                    </span>
+                    <span class="chip-row" style="justify-content:flex-end">${tags.join("")}</span>
+                  </div>
+                `;
+              })
+              .join("")
+          : `<div class="empty">파티 상세 기록이 없습니다.</div>`;
+
+        const reportsHtml = reports.length
+          ? reports
+              .map((report, index) => `
+                <div class="report-row">
+                  <span class="report-index">${index + 1}</span>
+                  <span>
+                    <h3>${escapeHtml(report.name)}</h3>
+                    <p>합계 ${report.total} · 범위 ${report.min}~${report.max}${report.success ? ` · ${report.reward}G` : " · 생존 판정"}</p>
+                  </span>
+                  <span class="report-result ${report.success ? "success" : "failure"}">
+                    ${report.success ? "성공" : "실패"}
+                  </span>
+                </div>
+              `)
+              .join("")
+          : `<div class="empty" style="min-height:90px">인카운터 상세 기록이 없습니다.</div>`;
+
+        app.innerHTML = `
+          <section class="screen screen-layout with-bottom">
+            ${renderTopbar("모험 결과", "result-hall")}
+
+            <main class="content">
+              <section class="result-hero ${summary.partyWiped ? "failure" : "success"}">
+                <div class="big-icon">${summary.partyWiped ? "☠️" : "🏆"}</div>
+                <h1>${summary.partyWiped ? "모험 실패" : "모험 성공"}</h1>
+                <p>${escapeHtml(difficulty.name)} 던전 · ${formatDateTime(summary.completedAt)}</p>
+
+                <div class="result-summary-grid">
+                  <div class="result-summary-cell">
+                    <span>최종 획득</span>
+                    <strong>${summary.finalGold || 0}G</strong>
+                  </div>
+                  <div class="result-summary-cell">
+                    <span>생환</span>
+                    <strong>${summary.survivors || 0}명</strong>
+                  </div>
+                  <div class="result-summary-cell">
+                    <span>사망</span>
+                    <strong>${deadMembers.length}명</strong>
+                  </div>
+                  <div class="result-summary-cell">
+                    <span>누적 보상</span>
+                    <strong>${summary.earnedGold || 0}G</strong>
+                  </div>
+                  <div class="result-summary-cell">
+                    <span>락픽</span>
+                    <strong>${summary.lockpickUsed ? "+50%" : "미사용"}</strong>
+                  </div>
+                  <div class="result-summary-cell">
+                    <span>부상 배율</span>
+                    <strong>${summary.partyWiped ? "0%" : `${Math.round((summary.multiplier || 0) * 100)}%`}</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="section-head">
+                  <div>
+                    <h2>사망한 모험가</h2>
+                    <p>사망자는 명예의 전당에도 기록됩니다.</p>
+                  </div>
+                </div>
+                <div class="result-list">${deadHtml}</div>
+              </section>
+
+              <section class="panel">
+                <div class="section-head">
+                  <div>
+                    <h2>파티 결과 정보</h2>
+                    <p>생환, 사망, 트라우마와 부상 기록입니다.</p>
+                  </div>
+                </div>
+                <div class="result-list">${memberHtml}</div>
+              </section>
+
+              <section class="panel">
+                <div class="section-head">
+                  <div>
+                    <h2>인카운터 결과</h2>
+                    <p>각 인카운터의 성공 여부와 주사위 합계입니다.</p>
+                  </div>
+                </div>
+                <div class="result-list">${reportsHtml}</div>
+              </section>
+            </main>
+
+            <footer class="bottom-actions single">
+              <button class="btn primary wide" data-action="result-hall">길드 메인 홀</button>
+            </footer>
+          </section>
+        `;
+      }
+
+      function renderModal() {
+        if (!modalState) {
+          modalRoot.innerHTML = "";
+          return;
+        }
+
+        if (modalState.type === "notice") {
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="notice-box">
+                  <span class="notice-icon">${modalState.icon || "ℹ️"}</span>
+                  <h3>${escapeHtml(modalState.title || "안내")}</h3>
+                  <p>${escapeHtml(modalState.text || "")}</p>
+                </div>
+                <div class="modal-actions single">
+                  <button class="btn primary wide" data-action="close-modal">확인</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "recruit") {
+          const character = state.characters.find(
+            entry => entry.id === modalState.characterId
+          );
+
+          if (!character) {
+            closeModal();
+            return;
+          }
+
+          const profile = getCharacterProfile(character);
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>신규 모험가 소집</h2>
+                    <p>새로운 모험가가 길드에 합류했습니다.</p>
+                  </div>
+                </div>
+
+                <div class="recruit-card">
+                  <div class="recruit-avatar">${profile.job.icon}</div>
+                  <h3>${escapeHtml(profile.name)}</h3>
+                  <p>${escapeHtml(profile.gender.name)} · ${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)}</p>
+                  <p>성격 · ${escapeHtml(profile.personality.name)}</p>
+                  <div class="chip-row" style="justify-content:center;margin-top:10px">
+                    ${renderStatusChips(character)}
+                    <span class="chip">모험 성공 0회</span>
+                  </div>
+                </div>
+
+                <div class="modal-actions single">
+                  <button class="btn primary wide" data-action="close-modal">확인</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "item-register") {
+          const ownedItems = Object.entries(ITEM_DEFS).filter(
+            ([key]) => (state.inventory[key] || 0) > 0
+          );
+
+          const rows = [
+            `
+              <button class="item-select-row ${!state.selectedItem ? "selected" : ""}" data-action="select-registered-item" data-key="none">
+                <span class="item-icon">✋</span>
+                <span>
+                  <h3>아이템 없음</h3>
+                  <p>이번 원정에 도구를 등록하지 않습니다.</p>
+                </span>
+                <span class="count">선택</span>
+              </button>
+            `,
+            ...ownedItems.map(([key, item]) => `
+              <button class="item-select-row ${state.selectedItem === key ? "selected" : ""}" data-action="select-registered-item" data-key="${key}">
+                <span class="item-icon">${item.icon}</span>
+                <span>
+                  <h3>${escapeHtml(item.name)}</h3>
+                  <p>${escapeHtml(item.description)}</p>
+                </span>
+                <span class="count">${state.inventory[key] || 0}개</span>
+              </button>
+            `)
+          ].join("");
+
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>아이템 등록</h2>
+                    <p>활성화할 아이템은 한 개만 선택할 수 있습니다.</p>
+                  </div>
+                  <button class="modal-close" data-action="close-modal">✕</button>
+                </div>
+
+                <div class="item-select-list">${rows}</div>
+
+                <div class="modal-actions single">
+                  <button class="btn primary wide" data-action="close-modal">확인</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "unimplemented") {
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>${escapeHtml(modalState.name || "시설")}</h2>
+                  </div>
+                  <button class="modal-close" data-action="close-modal">✕</button>
+                </div>
+                <div class="notice-box">
+                  <span class="notice-icon">🚧</span>
+                  <h3>미구현</h3>
+                  <p>이 시설은 추후 업데이트에서 이용할 수 있습니다.</p>
+                </div>
+                <div class="modal-actions single">
+                  <button class="btn primary wide" data-action="close-modal">확인</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "tool-shop") {
+          const rows = Object.entries(ITEM_DEFS)
+            .map(([key, item]) => `
+              <div class="shop-row">
+                <span class="item-icon">${item.icon}</span>
+                <span>
+                  <h3>${escapeHtml(item.name)}</h3>
+                  <p>보유 ${state.inventory[key] || 0}개 · 가격 ${item.price}G</p>
+                </span>
+                <span class="shop-row-actions">
+                  <button class="btn primary small" data-action="buy-item" data-key="${key}" ${state.gold < item.price ? "disabled" : ""}>구매</button>
+                  <button class="btn secondary small" data-action="sell-item" data-key="${key}" ${(state.inventory[key] || 0) <= 0 ? "disabled" : ""}>판매</button>
+                </span>
+              </div>
+            `)
+            .join("");
+
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>도구점</h2>
+                    <p>구매 가격과 판매 가격은 동일합니다. 현재 골드 ${state.gold}G</p>
+                  </div>
+                  <button class="modal-close" data-action="close-modal">✕</button>
+                </div>
+                <div class="shop-list">${rows}</div>
+                <div class="modal-actions single">
+                  <button class="btn primary wide" data-action="close-modal">확인</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "dungeon") {
+          const key = modalState.key;
+          const difficulty = DIFFICULTIES[key];
+          const party = alivePartyMembers();
+          const activeItem = state.selectedItem ? ITEM_DEFS[state.selectedItem] : null;
+          const canStart = party.length === 4;
+
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>${escapeHtml(difficulty.name)} 던전</h2>
+                    <p>${escapeHtml(difficulty.description)}</p>
+                  </div>
+                  <button class="modal-close" data-action="close-modal">✕</button>
+                </div>
+
+                <div class="detail-grid">
+                  <div class="detail-cell">
+                    <span>성공 범위 크기</span>
+                    <strong>${difficulty.rangeSize}칸</strong>
+                  </div>
+                  <div class="detail-cell">
+                    <span>보상 배율</span>
+                    <strong>${Math.round(difficulty.rewardMultiplier * 100)}%</strong>
+                  </div>
+                  <div class="detail-cell">
+                    <span>파티 편성</span>
+                    <strong>${party.length}/4명</strong>
+                  </div>
+                  <div class="detail-cell">
+                    <span>등록 아이템</span>
+                    <strong>${activeItem ? `${activeItem.icon} ${escapeHtml(activeItem.name)}` : "없음"}</strong>
+                  </div>
+                </div>
+
+                ${
+                  canStart
+                    ? ""
+                    : `<div class="result-banner failure">출발하려면 파티원 4명이 필요합니다.</div>`
+                }
+
+                <div class="modal-actions">
+                  <button class="btn secondary" data-action="close-modal">취소</button>
+                  <button class="btn primary" data-action="start-dungeon" data-key="${key}" ${canStart ? "" : "disabled"}>출발</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
+        if (modalState.type === "bandage") {
+          const injured = (modalState.injuredIds || [])
+            .map(id => state.characters.find(character => character.id === id))
+            .filter(Boolean);
+          const rows = injured
+            .map(character => {
+              const profile = getCharacterProfile(character);
+              return `
+                <button class="item-select-row" data-action="use-bandage-target" data-id="${character.id}">
+                  <span class="item-icon">${profile.job.icon}</span>
+                  <span>
+                    <h3>${escapeHtml(profile.name)}</h3>
+                    <p>${escapeHtml(profile.race.name)} · ${escapeHtml(profile.job.name)} · 부상 상태</p>
+                  </span>
+                  <span class="count">치료</span>
+                </button>
+              `;
+            })
+            .join("");
+
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="modal-head">
+                  <div>
+                    <h2>붕대 사용할 대상</h2>
+                    <p>부상한 파티원 한 명을 선택하세요.</p>
+                  </div>
+                  <button class="modal-close" data-action="close-modal">✕</button>
+                </div>
+                <div class="item-select-list">${rows}</div>
+              </section>
+            </div>
+          `;
+        }
+      }
+
+      function render() {
+        normalizeState();
+
+        if (currentScreen === "hall") {
+          renderHall();
+        } else if (currentScreen === "memorial") {
+          renderMemorial();
+        } else if (currentScreen === "party") {
+          renderParty();
+        } else if (currentScreen === "shop") {
+          renderShop();
+        } else if (currentScreen === "map") {
+          renderMap();
+        } else if (currentScreen === "adventure") {
+          renderAdventure();
+        } else if (currentScreen === "result") {
+          renderResult();
+        } else {
+          renderTitle();
+        }
+
+        renderModal();
+      }
+
+      document.addEventListener("click", event => {
+        const target = event.target.closest("[data-action]");
+
+        if (!target) {
+          return;
+        }
+
+        const action = target.dataset.action;
+
+        if (action === "start-game") {
+          goTo("hall");
+        } else if (action === "back-title") {
+          goTo("title");
+        } else if (action === "back-hall") {
+          goTo("hall");
+        } else if (action === "go-memorial") {
+          goTo("memorial");
+        } else if (action === "go-party") {
+          goTo("party");
+        } else if (action === "go-shop") {
+          goTo("shop");
+        } else if (action === "go-map") {
+          goTo("map");
+        } else if (action === "toggle-memorial") {
+          const entry = document.querySelector(
+            `[data-memorial-id="${CSS.escape(target.dataset.id)}"]`
+          );
+          entry?.classList.toggle("open");
+        } else if (action === "toggle-party") {
+          toggleParty(target.dataset.id);
+        } else if (action === "recruit") {
+          recruitCharacter();
+        } else if (action === "open-item-register") {
+          showModal("item-register");
+        } else if (action === "select-registered-item") {
+          selectRegisteredItem(target.dataset.key);
+        } else if (action === "open-unimplemented") {
+          showModal("unimplemented", { name: target.dataset.name });
+        } else if (action === "open-tool-shop") {
+          showModal("tool-shop");
+        } else if (action === "buy-item") {
+          buyItem(target.dataset.key);
+        } else if (action === "sell-item") {
+          sellItem(target.dataset.key);
+        } else if (action === "open-dungeon") {
+          selectedDungeonKey = target.dataset.key;
+          showModal("dungeon", { key: selectedDungeonKey });
+        } else if (action === "start-dungeon") {
+          startDungeon(target.dataset.key);
+        } else if (action === "adventure-back") {
+          showModal("notice", {
+            title: "이동할 수 없습니다",
+            text: "지금은 물러설 수 없습니다.",
+            icon: "🛡️"
+          });
+        } else if (action === "roll-encounter") {
+          rollEncounter();
+        } else if (action === "confirm-roll") {
+          confirmRolledResult();
+        } else if (action === "advance-dungeon") {
+          advanceDungeon();
+        } else if (action === "use-rope") {
+          useRope();
+        } else if (action === "use-bandage-modal") {
+          showBandageTargets();
+        } else if (action === "use-bandage-target") {
+          useBandage(target.dataset.id);
+        } else if (action === "result-hall") {
+          goTo("hall");
+        } else if (action === "close-modal") {
+          closeModal();
+        }
+      });
+
+      window.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modalState) {
+          closeModal();
+        }
+      });
+
+      if (state.dungeon) {
+        currentScreen = "adventure";
+      }
+
+      save();
+      render();
+    })();
+  </script>
 </body>
 </html>
