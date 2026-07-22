@@ -669,6 +669,58 @@
 
     .tool-banner strong { color: var(--accent); }
 
+    .difficulty-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin: 14px 0;
+    }
+
+    .difficulty-card {
+      padding: 13px 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--text);
+      background: var(--panel-2);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .difficulty-card:hover:not(:disabled) {
+      border-color: rgba(217, 164, 65, .68);
+    }
+
+    .difficulty-card.selected {
+      color: #21170a;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .difficulty-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: .9rem;
+    }
+
+    .difficulty-card span {
+      display: block;
+      font-size: .7rem;
+      line-height: 1.45;
+      opacity: .84;
+    }
+
+    .difficulty-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: #22180b;
+      background: var(--accent);
+      font-size: .73rem;
+      font-weight: 900;
+    }
+
     .tool-actions {
       display: flex;
       flex-wrap: wrap;
@@ -715,6 +767,7 @@
       .resource { flex: 1; text-align: left; }
       .panel { padding: 14px; }
       .party-slots, .rolls, .item-grid, .target-list { grid-template-columns: repeat(2, 1fr); }
+      .difficulty-grid { grid-template-columns: 1fr; }
       .rules { grid-template-columns: 1fr; }
       .panel-header { align-items: flex-start; flex-direction: column; }
     }
@@ -835,10 +888,11 @@
           </div>
           <div class="rules">
             <div class="rule"><strong>가챠</strong>새 게임은 300G로 시작하며 모험가 1명 소환에 10G가 듭니다.</div>
-            <div class="rule"><strong>인카운터</strong>파티원의 주사위 합계가 ‘이상’ 또는 ‘이하’ 조건을 만족하면 성공합니다.</div>
+            <div class="rule"><strong>인카운터</strong>파티 주사위 합계가 제시된 최솟값과 최댓값 사이에 들어오면 성공합니다.</div>
             <div class="rule"><strong>실패 생존 판정</strong>1은 사망, 2는 영구 트라우마, 3은 부상, 4~6은 무사 생존입니다.</div>
             <div class="rule"><strong>디버프</strong>트라우마는 매 인카운터 50% 확률로 주사위를 못 굴리며 영구 지속됩니다. 부상은 주사위에 ±2를 적용하고 던전 종료 시 회복됩니다.</div>
             <div class="rule"><strong>원정 도구</strong>밧줄은 전체 재굴림, 붕대는 부상 치료, 락픽은 완료 보상 +50%입니다.</div>
+            <div class="rule"><strong>던전 난이도</strong>이지는 성공 범위 9칸·보상 100%, 노멀은 7칸·130%, 하드는 5칸·170%입니다.</div>
             <div class="rule"><strong>던전 종료</strong>생환한 모험가는 성공 횟수 +1을 얻습니다. 부상은 회복되지만 트라우마는 유지됩니다.</div>
           </div>
         </section>
@@ -851,8 +905,32 @@
       "use strict";
 
       const STORAGE_KEY = "dicebound-expedition-v1";
-      const SAVE_VERSION = 3;
+      const SAVE_VERSION = 4;
       const GACHA_COST = 10;
+
+      const DIFFICULTIES = {
+        easy: {
+          key: "easy",
+          name: "이지",
+          rangeSize: 9,
+          rewardMultiplier: 1,
+          description: "성공 범위 9칸 · 보상 100%"
+        },
+        normal: {
+          key: "normal",
+          name: "노멀",
+          rangeSize: 7,
+          rewardMultiplier: 1.3,
+          description: "성공 범위 7칸 · 보상 130%"
+        },
+        hard: {
+          key: "hard",
+          name: "하드",
+          rangeSize: 5,
+          rewardMultiplier: 1.7,
+          description: "성공 범위 5칸 · 보상 170%"
+        }
+      };
 
       const ITEM_DEFS = {
         rope: {
@@ -891,14 +969,10 @@
         { name: "괴물 사냥꾼", icon: "🐺" }
       ];
 
-      const GTE_NAMES = [
+      const ENCOUNTER_NAMES = [
         "무너지는 철문", "괴수의 돌진", "봉인석 파괴", "용암 협곡 도약",
-        "거인의 쇠사슬", "침수된 수문"
-      ];
-
-      const LTE_NAMES = [
-        "잠든 감시자", "낡은 유리 다리", "독가스 회랑", "그림자 숲 잠입",
-        "폭주하는 마력핵", "메아리 금지 구역"
+        "거인의 쇠사슬", "침수된 수문", "잠든 감시자", "낡은 유리 다리",
+        "독가스 회랑", "그림자 숲 잠입", "폭주하는 마력핵", "메아리 금지 구역"
       ];
 
       const els = {
@@ -926,6 +1000,7 @@
           gold: 300,
           inventory: { rope: 0, bandage: 0, lockpick: 0 },
           selectedItem: null,
+          selectedDifficulty: "easy",
           characters: [],
           partyIds: [],
           dungeon: null,
@@ -954,6 +1029,9 @@
 
           merged.saveVersion = SAVE_VERSION;
           merged.gold = Number.isFinite(Number(merged.gold)) ? Number(merged.gold) : 300;
+          merged.selectedDifficulty = DIFFICULTIES[merged.selectedDifficulty]
+            ? merged.selectedDifficulty
+            : "easy";
           merged.characters = merged.characters.map(character => ({
             ...character,
             alive: character.alive !== false,
@@ -965,14 +1043,47 @@
           }));
 
           if (merged.dungeon) {
+            const migratedDifficulty = DIFFICULTIES[merged.dungeon.difficulty]
+              ? merged.dungeon.difficulty
+              : merged.selectedDifficulty;
+            const difficultyDef = DIFFICULTIES[migratedDifficulty];
+
             merged.dungeon = {
               carriedItem: null,
               itemUsed: false,
               bandageTargetMode: false,
               ropeRerolled: false,
               traumaSkips: {},
+              difficulty: migratedDifficulty,
               ...merged.dungeon
             };
+
+            merged.dungeon.encounters = (merged.dungeon.encounters || []).map(encounter => {
+              if (Number.isFinite(Number(encounter.min)) && Number.isFinite(Number(encounter.max))) {
+                return {
+                  ...encounter,
+                  min: Number(encounter.min),
+                  max: Number(encounter.max),
+                  baseReward: Number.isFinite(Number(encounter.baseReward))
+                    ? Number(encounter.baseReward)
+                    : Math.max(1, Math.round((Number(encounter.reward) || 1) / difficultyDef.rewardMultiplier)),
+                  reward: Number(encounter.reward) || 1
+                };
+              }
+
+              const radius = Math.floor(difficultyDef.rangeSize / 2);
+              const legacyCenter = clamp(Number(encounter.target) || 14, 4 + radius, 24 - radius);
+              const oldReward = Number(encounter.reward) || 40;
+
+              return {
+                id: encounter.id || uid(),
+                name: encounter.name || pick(ENCOUNTER_NAMES),
+                min: legacyCenter - radius,
+                max: legacyCenter + radius,
+                baseReward: Math.max(1, Math.round(oldReward / difficultyDef.rewardMultiplier)),
+                reward: oldReward
+              };
+            });
           }
 
           return merged;
@@ -1118,18 +1229,29 @@
         render();
       }
 
-      function generateEncounter() {
-        const type = Math.random() < 0.5 ? "gte" : "lte";
-        const target = randomInt(8, 20);
-        const difficulty = type === "gte" ? target - 4 : 24 - target;
-        const reward = 18 + difficulty * 3 + randomInt(0, 8);
+      function selectDifficulty(key) {
+        if (state.dungeon || !DIFFICULTIES[key]) return;
+        state.selectedDifficulty = key;
+        save();
+        render();
+      }
+
+      function generateEncounter(difficultyKey) {
+        const difficulty = DIFFICULTIES[difficultyKey] || DIFFICULTIES.easy;
+        const radius = Math.floor(difficulty.rangeSize / 2);
+        const center = randomInt(4 + radius, 24 - radius);
+        const min = center - radius;
+        const max = center + radius;
+        const baseReward = randomInt(28, 42);
+        const reward = Math.floor(baseReward * difficulty.rewardMultiplier);
 
         return {
           id: uid(),
-          type,
-          target,
+          min,
+          max,
+          baseReward,
           reward,
-          name: type === "gte" ? pick(GTE_NAMES) : pick(LTE_NAMES)
+          name: pick(ENCOUNTER_NAMES)
         };
       }
 
@@ -1151,6 +1273,11 @@
           return;
         }
 
+        const difficultyKey = DIFFICULTIES[state.selectedDifficulty]
+          ? state.selectedDifficulty
+          : "easy";
+        const difficulty = DIFFICULTIES[difficultyKey];
+
         let carriedItem = state.selectedItem;
         if (carriedItem && state.inventory[carriedItem] <= 0) {
           carriedItem = null;
@@ -1162,7 +1289,12 @@
         });
 
         state.dungeon = {
-          encounters: [generateEncounter(), generateEncounter(), generateEncounter()],
+          encounters: [
+            generateEncounter(difficultyKey),
+            generateEncounter(difficultyKey),
+            generateEncounter(difficultyKey)
+          ],
+          difficulty: difficultyKey,
           index: 0,
           phase: "ready",
           earnedGold: 0,
@@ -1179,7 +1311,10 @@
 
         state.lastSummary = null;
         const itemText = carriedItem ? ` 도구는 ${ITEM_DEFS[carriedItem].name}입니다.` : " 도구 없이 출발합니다.";
-        addLog(`${members.map(c => c.name).join(", ")} 파티가 던전에 입장했습니다.${itemText}`);
+        addLog(
+          `${members.map(c => c.name).join(", ")} 파티가 ${difficulty.name} 던전에 입장했습니다.` +
+          `${itemText}`
+        );
         save();
         render();
       }
@@ -1261,9 +1396,7 @@
 
         const encounter = dungeon.encounters[dungeon.index];
         const total = dungeon.lastRolls.reduce((sum, roll) => sum + roll.final, 0);
-        const success = encounter.type === "gte"
-          ? total >= encounter.target
-          : total <= encounter.target;
+        const success = total >= encounter.min && total <= encounter.max;
 
         dungeon.lastSuccess = success;
         dungeon.survivalResults = [];
@@ -1271,7 +1404,7 @@
         if (success) {
           dungeon.earnedGold += encounter.reward;
           addLog(
-            `${encounter.name} 성공: 합계 ${total}, 조건 ${encounter.target}${encounter.type === "gte" ? " 이상" : " 이하"}, +${encounter.reward}G`
+            `${encounter.name} 성공: 합계 ${total}, 성공 범위 ${encounter.min}~${encounter.max}, +${encounter.reward}G`
           );
         } else {
           const results = [];
@@ -1460,6 +1593,7 @@
           partyWiped,
           survivors: survivingStartedMembers.length,
           successAwarded: partyWiped ? 0 : survivingStartedMembers.length,
+          difficulty: dungeon.difficulty || "easy",
           carriedItem: dungeon.carriedItem
         };
 
@@ -1721,16 +1855,36 @@
             ? `${ITEM_DEFS[state.selectedItem].icon} ${ITEM_DEFS[state.selectedItem].name} 지참`
             : "도구 없음";
 
+          const selectedDifficulty = DIFFICULTIES[state.selectedDifficulty] || DIFFICULTIES.easy;
+
           els.dungeonArea.innerHTML = `
             <div class="empty">
-              파티를 4명 편성한 뒤 원정을 시작하세요.<br>
+              파티를 4명 편성하고 던전 난이도를 선택한 뒤 원정을 시작하세요.<br>
               성공한 인카운터의 골드는 누적되며, 던전 종료 시 부상 페널티가 적용됩니다.<br>
-              다음 원정: ${selectedText}
+              다음 원정 도구: ${selectedText}
+            </div>
+            <div class="difficulty-grid" aria-label="던전 난이도 선택">
+              ${Object.entries(DIFFICULTIES).map(([key, difficulty]) => `
+                <button class="difficulty-card ${state.selectedDifficulty === key ? "selected" : ""}"
+                  data-difficulty="${key}">
+                  <strong>${difficulty.name}</strong>
+                  <span>${difficulty.description}</span>
+                </button>
+              `).join("")}
+            </div>
+            <div class="tool-banner">
+              <span>선택한 난이도</span>
+              <strong>${selectedDifficulty.name} · 보상 ${Math.round(selectedDifficulty.rewardMultiplier * 100)}%</strong>
             </div>
             <button id="startDungeonBtn" class="primary-wide" ${partyReady ? "" : "disabled"}>
-              ${partyReady ? "던전 탐험 시작" : `파티원 ${alivePartyMembers().length}/4`}
+              ${partyReady ? `${selectedDifficulty.name} 던전 탐험 시작` : `파티원 ${alivePartyMembers().length}/4`}
             </button>
           `;
+
+          document.querySelectorAll("[data-difficulty]").forEach(button => {
+            button.addEventListener("click", () => selectDifficulty(button.dataset.difficulty));
+          });
+
           const startBtn = document.getElementById("startDungeonBtn");
           if (startBtn) startBtn.addEventListener("click", startDungeon);
           return;
@@ -1738,9 +1892,8 @@
 
         const dungeon = state.dungeon;
         const encounter = dungeon.encounters[dungeon.index];
-        const conditionText = encounter.type === "gte"
-          ? `${encounter.target} 이상`
-          : `${encounter.target} 이하`;
+        const difficulty = DIFFICULTIES[dungeon.difficulty] || DIFFICULTIES.easy;
+        const conditionText = `${encounter.min}~${encounter.max}`;
 
         const rollsHtml = dungeon.lastRolls.length
           ? `
@@ -1825,7 +1978,10 @@
           ${progressHtml(dungeon)}
           <div class="encounter">
             <div class="encounter-kicker">Encounter ${dungeon.index + 1}</div>
-            <h3>${encounter.name}</h3>
+            <div class="char-top">
+              <h3>${encounter.name}</h3>
+              <span class="difficulty-badge">${difficulty.name}</span>
+            </div>
             <p class="panel-subtitle">
               트라우마 캐릭터는 인카운터마다 50% 확률로 주사위를 굴리지 못합니다. 부상자는 굴림에 ±2 보정을 받습니다.
             </p>
@@ -1836,12 +1992,12 @@
             </div>
             <div class="reward-line">
               <span>현재 생존자 ${alivePartyMembers().length}명</span>
-              <span>성공 보상 ${encounter.reward}G · 누적 ${dungeon.earnedGold}G</span>
+              <span>기본 ${encounter.baseReward}G × ${Math.round(difficulty.rewardMultiplier * 100)}% = ${encounter.reward}G · 누적 ${dungeon.earnedGold}G</span>
             </div>
             ${rollsHtml}
             ${dungeon.phase === "rolled" ? `
               <div class="result-banner ${(
-                encounter.type === "gte" ? total >= encounter.target : total <= encounter.target
+                total >= encounter.min && total <= encounter.max
               ) ? "success" : "failure"}">
                 임시 결과 · 주사위 합계 ${total} · 밧줄을 사용할지 선택하세요
               </div>
@@ -1871,7 +2027,9 @@
 
         els.lastSummary.innerHTML = `
           <div class="${s.partyWiped ? "result-banner failure" : "result-banner success"}">
-            ${s.partyWiped ? "원정대 전멸 · 보상 회수 실패" : `탐험 완료 · ${s.finalGold}G 획득`}
+            ${s.partyWiped
+              ? `${(DIFFICULTIES[s.difficulty] || DIFFICULTIES.easy).name} 던전 전멸 · 보상 회수 실패`
+              : `${(DIFFICULTIES[s.difficulty] || DIFFICULTIES.easy).name} 던전 완료 · ${s.finalGold}G 획득`}
           </div>
           <div class="summary">
             <div><span>인카운터 누적</span><strong>${s.earnedGold}G</strong></div>
