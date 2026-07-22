@@ -159,15 +159,34 @@
       font-size: 0.86rem;
     }
 
-    .back-btn {
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .back-btn,
+    .reset-data-btn {
       min-height: 36px;
       padding: 0 13px;
       border: 1px solid var(--line);
       border-radius: 11px;
-      color: #ddd2e6;
-      background: rgba(255, 255, 255, 0.05);
       font-size: 0.73rem;
       font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .back-btn {
+      color: #ddd2e6;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .reset-data-btn {
+      color: #ffb7b7;
+      border-color: rgba(239, 127, 131, 0.32);
+      background: rgba(151, 52, 61, 0.22);
     }
 
     .content {
@@ -2000,6 +2019,16 @@
         state.log = state.log.slice(0, 100);
       }
 
+      function resetGameData() {
+        localStorage.removeItem(STORAGE_KEY);
+        state = defaultState();
+        currentScreen = "hall";
+        selectedDungeonKey = null;
+        modalState = null;
+        save();
+        render();
+      }
+
       function normalizeState() {
         state.partyIds = state.partyIds
           .filter(id => {
@@ -2052,7 +2081,11 @@
         };
       }
 
-      function renderTopbar(title, backAction = "back-hall") {
+      function renderTopbar(
+        title,
+        backAction = "back-hall",
+        showResetButton = false
+      ) {
         return `
           <header class="topbar">
             <div class="gold-box">
@@ -2063,7 +2096,14 @@
               </div>
             </div>
 
-            <button class="back-btn" data-action="${backAction}">뒤로</button>
+            <div class="topbar-actions">
+              ${
+                showResetButton
+                  ? '<button class="reset-data-btn" data-action="open-reset">데이터 초기화</button>'
+                  : ""
+              }
+              <button class="back-btn" data-action="${backAction}">뒤로</button>
+            </div>
           </header>
         `;
       }
@@ -2719,7 +2759,7 @@
 
         app.innerHTML = `
           <section class="screen screen-layout">
-            ${renderTopbar("길드 메인 홀", "back-title")}
+            ${renderTopbar("길드 메인 홀", "back-title", true)}
 
             <main class="content">
               <div class="hall-content">
@@ -3490,6 +3530,28 @@
           return;
         }
 
+        if (modalState.type === "reset-confirm") {
+          modalRoot.innerHTML = `
+            <div class="modal-layer">
+              <section class="modal">
+                <div class="notice-box">
+                  <span class="notice-icon">⚠️</span>
+                  <h3>데이터 초기화</h3>
+                  <p>
+                    골드, 모험가, 아이템, 파티, 명예의 전당과 모든 기록을 삭제할까요?<br>
+                    삭제한 데이터는 복구할 수 없습니다.
+                  </p>
+                </div>
+                <div class="modal-actions">
+                  <button class="btn secondary" data-action="close-modal">취소</button>
+                  <button class="btn danger" data-action="confirm-reset">초기화</button>
+                </div>
+              </section>
+            </div>
+          `;
+          return;
+        }
+
         if (modalState.type === "notice") {
           modalRoot.innerHTML = `
             <div class="modal-layer">
@@ -3785,6 +3847,10 @@
 
         if (action === "start-game") {
           goTo("hall");
+        } else if (action === "open-reset") {
+          showModal("reset-confirm");
+        } else if (action === "confirm-reset") {
+          resetGameData();
         } else if (action === "back-title") {
           goTo("title");
         } else if (action === "back-hall") {
