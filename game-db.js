@@ -323,7 +323,7 @@ globalThis.GAME_DB = {
   difficulties: {
     easy: {
       key: "easy",
-      name: "이지",
+      name: "바위 초원",
       rangeSize: 9,
       rewardMultiplier: 1,
       description: "성공 범위 9칸 · 보상 100%"
@@ -331,7 +331,7 @@ globalThis.GAME_DB = {
 
     normal: {
       key: "normal",
-      name: "노멀",
+      name: "나무열매 숲",
       rangeSize: 7,
       rewardMultiplier: 1.3,
       description: "성공 범위 7칸 · 보상 130%"
@@ -339,7 +339,7 @@ globalThis.GAME_DB = {
 
     hard: {
       key: "hard",
-      name: "하드",
+      name: "광신도의 지하 아지트",
       rangeSize: 5,
       rewardMultiplier: 1.7,
       description: "성공 범위 5칸 · 보상 170%"
