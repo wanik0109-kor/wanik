@@ -2730,6 +2730,255 @@
         render();
       }
 
+      function startDungeonAuto(difficultyKey) {
+        if (state.dungeon) {
+          return;
+        }
+
+        const members = alivePartyMembers();
+
+        if (members.length !== 4) {
+          showModal("notice", {
+            title: "파티 편성 필요",
+            text: "던전에 출발하려면 생존한 파티원 4명이 필요합니다.",
+            icon: "👥"
+          });
+          return;
+        }
+
+        const difficulty = DIFFICULTIES[difficultyKey];
+
+        if (!difficulty) {
+          return;
+        }
+
+        members.forEach(character => {
+          character.injured = false;
+        });
+
+        const startedPartyIds = [...state.partyIds];
+        const startingTraumaIds = members
+          .filter(character => character.trauma)
+          .map(character => character.id);
+
+        const encounters = [
+          generateEncounter(difficultyKey),
+          generateEncounter(difficultyKey),
+          generateEncounter(difficultyKey)
+        ];
+
+        let earnedGold = 0;
+        const encounterReports = [];
+        let partyWiped = false;
+
+        addLog(
+          `${members.map(getCharacterName).join(", ")} 파티가 ${difficulty.name}에 입장했습니다.`
+        );
+
+        for (let index = 0; index < encounters.length; index += 1) {
+          const encounter = encounters[index];
+          const alive = alivePartyMembers();
+
+          if (alive.length === 0) {
+            partyWiped = true;
+            break;
+          }
+
+          const traumaSkips = {};
+          alive.forEach(character => {
+            if (character.trauma) {
+              traumaSkips[character.id] = Math.random() < 0.5;
+            }
+          });
+
+          const rolls = alive.map(character => {
+            const skipped = Boolean(character.trauma && traumaSkips[character.id]);
+
+            if (skipped) {
+              return {
+                characterId: character.id,
+                name: getCharacterName(character),
+                raw: null,
+                modifier: 0,
+                final: 0,
+                skipped: true
+              };
+            }
+
+            const raw = randomInt(1, 6);
+            const modifier = character.injured
+              ? Math.random() < 0.5
+                ? -2
+                : 2
+              : 0;
+
+            return {
+              characterId: character.id,
+              name: getCharacterName(character),
+              raw,
+              modifier,
+              final: clamp(raw + modifier, 1, 6),
+              skipped: false
+            };
+          });
+
+          const total = rolls.reduce((sum, roll) => sum + roll.final, 0);
+          const success = total >= encounter.min && total <= encounter.max;
+          let survivalResults = [];
+
+          if (success) {
+            earnedGold += encounter.reward;
+            addLog(
+              `${encounter.name} 성공: 합계 ${total}, 성공 범위 ${encounter.min}~${encounter.max}, +${encounter.reward}G`
+            );
+          } else {
+            survivalResults = alive.map(character => {
+              const survivalRoll = randomInt(1, 6);
+              let result = "safe";
+
+              if (survivalRoll === 1) {
+                character.alive = false;
+                character.injured = false;
+                result = "dead";
+                character.deathRecord = {
+                  difficultyKey,
+                  difficultyName: difficulty.name,
+                  encounterName: encounter.name,
+                  encounterIndex: index + 1,
+                  survivalRoll,
+                  diedAt: new Date().toISOString(),
+                  successCount: Number(character.successCount) || 0
+                };
+              } else if (survivalRoll === 2) {
+                character.trauma = true;
+                result = "trauma";
+              } else if (survivalRoll === 3) {
+                character.injured = true;
+                result = "injured";
+              }
+
+              return {
+                characterId: character.id,
+                name: getCharacterName(character),
+                roll: survivalRoll,
+                result
+              };
+            });
+
+            addLog(`${encounter.name} 실패: 합계 ${total}, 생존 판정을 진행했습니다.`);
+          }
+
+          encounterReports.push({
+            index,
+            name: encounter.name,
+            min: encounter.min,
+            max: encounter.max,
+            reward: encounter.reward,
+            total,
+            success,
+            rolls,
+            survivalResults
+          });
+        }
+
+        if (alivePartyMembers().length === 0) {
+          partyWiped = true;
+        }
+
+        finalizeDungeonRun({
+          difficultyKey,
+          startedPartyIds,
+          startingTraumaIds,
+          earnedGold,
+          encounterReports,
+          partyWiped
+        });
+      }
+
+      function finalizeDungeonRun({
+        difficultyKey,
+        startedPartyIds,
+        startingTraumaIds,
+        earnedGold,
+        encounterReports,
+        partyWiped
+      }) {
+        const difficulty = DIFFICULTIES[difficultyKey] || DIFFICULTIES.easy;
+        const startedMembers = startedPartyIds
+          .map(id => state.characters.find(character => character.id === id))
+          .filter(Boolean);
+        const survivors = startedMembers.filter(character => character.alive);
+        const injuredIds = survivors
+          .filter(character => character.injured)
+          .map(character => character.id);
+        const injuryMultiplier = Math.max(0.4, 1 - injuredIds.length * 0.15);
+
+        if (!partyWiped) {
+          survivors.forEach(character => {
+            character.successCount = (character.successCount || 0) + 1;
+          });
+        }
+
+        const finalGold = partyWiped ? 0 : Math.floor(earnedGold * injuryMultiplier);
+        state.gold += finalGold;
+
+        const startingTraumaSet = new Set(startingTraumaIds || []);
+        const newTraumaIds = startedMembers
+          .filter(
+            character => character.trauma && !startingTraumaSet.has(character.id)
+          )
+          .map(character => character.id);
+
+        const snapshots = startedMembers.map(character =>
+          characterSnapshot(character, injuredIds.includes(character.id))
+        );
+
+        state.lastSummary = {
+          difficulty: difficultyKey,
+          earnedGold,
+          boostedGold: earnedGold,
+          lockpickUsed: false,
+          injuredCount: injuredIds.length,
+          multiplier: injuryMultiplier,
+          finalGold,
+          partyWiped,
+          survivors: survivors.length,
+          successAwarded: partyWiped ? 0 : survivors.length,
+          carriedItem: null,
+          memberSnapshots: snapshots,
+          deadIds: startedMembers
+            .filter(character => !character.alive)
+            .map(character => character.id),
+          injuredIds,
+          newTraumaIds,
+          encounterReports,
+          completedAt: new Date().toISOString()
+        };
+
+        state.characters.forEach(character => {
+          if (character.alive) {
+            character.injured = false;
+          }
+        });
+
+        state.partyIds = state.partyIds.filter(id => {
+          const character = state.characters.find(entry => entry.id === id);
+          return Boolean(character && character.alive);
+        });
+
+        addLog(
+          partyWiped
+            ? `원정대 전멸. 누적 보상 ${earnedGold}G를 회수하지 못했습니다.`
+            : `던전 정산 완료: 최종 ${finalGold}G 획득.`
+        );
+
+        state.dungeon = null;
+        currentScreen = "result";
+        closeModal();
+        save();
+        render();
+      }
+
       function renderTitle() {
         app.innerHTML = `
           <section class="title-screen">
@@ -2984,7 +3233,7 @@
               <button class="btn primary" data-action="recruit" ${recruitDisabled ? "disabled" : ""}>
                 모험가 소집 · ${GACHA_COST}G
               </button>
-              <button class="btn blue" data-action="open-item-register">
+              <button class="btn blue" data-action="open-unimplemented" data-name="아이템 등록">
                 아이템 등록
               </button>
             </footer>
@@ -3009,7 +3258,7 @@
                   <small>무기와 방어구</small>
                 </button>
 
-                <button class="place-btn place-toolshop" data-action="open-tool-shop">
+                <button class="place-btn place-toolshop" data-action="open-unimplemented" data-name="도구점">
                   <span class="place-icon">🧰</span>
                   <strong>도구점</strong>
                   <small>원정 도구</small>
@@ -3073,20 +3322,20 @@
                 </div>
 
                 <button class="dungeon-btn dungeon-easy" data-action="open-dungeon" data-key="easy">
-                  <span class="place-icon">🌿</span>
-                  <strong>이지 던전</strong>
+                  <span class="place-icon">🪨</span>
+                  <strong>바위 초원</strong>
                   <small>안정적인 원정</small>
                 </button>
 
                 <button class="dungeon-btn dungeon-normal" data-action="open-dungeon" data-key="normal">
-                  <span class="place-icon">🌙</span>
-                  <strong>노멀 던전</strong>
+                  <span class="place-icon">🌰</span>
+                  <strong>나무열매 숲</strong>
                   <small>균형 잡힌 위험</small>
                 </button>
 
                 <button class="dungeon-btn dungeon-hard" data-action="open-dungeon" data-key="hard">
-                  <span class="place-icon">🔥</span>
-                  <strong>하드 던전</strong>
+                  <span class="place-icon">🩸</span>
+                  <strong>광신도의 지하 아지트</strong>
                   <small>높은 위험과 보상</small>
                 </button>
               </section>
@@ -3726,7 +3975,6 @@
           const key = modalState.key;
           const difficulty = DIFFICULTIES[key];
           const party = alivePartyMembers();
-          const activeItem = state.selectedItem ? ITEM_DEFS[state.selectedItem] : null;
           const canStart = party.length === 4;
 
           modalRoot.innerHTML = `
@@ -3734,7 +3982,7 @@
               <section class="modal">
                 <div class="modal-head">
                   <div>
-                    <h2>${escapeHtml(difficulty.name)} 던전</h2>
+                    <h2>${escapeHtml(difficulty.name)}</h2>
                     <p>${escapeHtml(difficulty.description)}</p>
                   </div>
                   <button class="modal-close" data-action="close-modal">✕</button>
@@ -3753,10 +4001,6 @@
                     <span>파티 편성</span>
                     <strong>${party.length}/4명</strong>
                   </div>
-                  <div class="detail-cell">
-                    <span>등록 아이템</span>
-                    <strong>${activeItem ? `${activeItem.icon} ${escapeHtml(activeItem.name)}` : "없음"}</strong>
-                  </div>
                 </div>
 
                 ${
@@ -3767,7 +4011,7 @@
 
                 <div class="modal-actions">
                   <button class="btn secondary" data-action="close-modal">취소</button>
-                  <button class="btn primary" data-action="start-dungeon" data-key="${key}" ${canStart ? "" : "disabled"}>출발</button>
+                  <button class="btn primary" data-action="start-dungeon" data-key="${key}" ${canStart ? "" : "disabled"}>모험 출발</button>
                 </div>
               </section>
             </div>
@@ -3888,7 +4132,7 @@
           selectedDungeonKey = target.dataset.key;
           showModal("dungeon", { key: selectedDungeonKey });
         } else if (action === "start-dungeon") {
-          startDungeon(target.dataset.key);
+          startDungeonAuto(target.dataset.key);
         } else if (action === "adventure-back") {
           showModal("notice", {
             title: "이동할 수 없습니다",
